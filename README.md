@@ -14,9 +14,29 @@ A lightweight Laravel package for API documentation generation with **fully conf
 
 ## Installation
 
+### 1. Require Package
+
 ```bash
-composer require easypack/doc
+composer require iron-curtain/easy-doc
 ```
+
+### 2. Auto-Install
+
+Run the installer to configure your API name and base URL automatically:
+
+```bash
+php artisan easy-doc:install
+```
+
+### 3. Generate Documentation
+
+You can generate documentation immediately with zero configuration:
+
+```bash
+php artisan easy-doc:generate --auto
+```
+
+That's it! Your documentation is now available at `/easy-doc`.
 
 ## Quick Start
 
@@ -165,6 +185,43 @@ Forget defining schemas manually! Just pass your Eloquent model:
 ```
 
 You can still use `SchemaBuilder::defineResource()` if you need to customize relationships or fields first.
+
+You can still use `SchemaBuilder::defineResource()` if you need to customize relationships or fields first.
+
+## 🤖 Smart Automation
+
+Easy-Doc works hard so you don't have to. If you use **FormRequest** validation and standard naming conventions, you can skip almost everything!
+
+### 1. Auto-FormRequest Parsing
+
+If your controller method uses a `FormRequest`, we automatically extract validation rules and document them as parameters.
+
+**Code:**
+
+```php
+// In StoreUserRequest
+public function rules() {
+    return [
+        'email' => 'required|email|unique:users',
+        'age' => 'integer|min:18',
+        'role' => 'in:admin,user',
+    ];
+}
+
+// In UserController
+public function store(StoreUserRequest $request)
+{
+    // Minimal doc definition
+    document(fn() => (new APICall())->setSuccessObject(User::class));
+}
+```
+
+**Result:**
+
+- **Params:** `email` (required), `age` (min: 18), `role` (enum: admin, user)
+- **Response:** User object
+- **Name:** "Create a User" (Auto-inferred from method name)
+- **Group:** "User" (Auto-inferred from controller name)
 
 ## Parameter Validation
 

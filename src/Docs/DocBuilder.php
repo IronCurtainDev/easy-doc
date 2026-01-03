@@ -100,6 +100,12 @@ class DocBuilder
             $apiCall->setGroup('Misc');
         }
 
+        // Auto-generate params from rules if available and params are empty
+        if (empty($apiCall->getParams()) && !empty($this->attributes['rules'])) {
+            $autoParams = $this->generateParamsFromRules($this->attributes['rules']);
+            $apiCall->setParams($autoParams);
+        }
+
         $this->apiCalls->push($apiCall);
     }
 
@@ -135,11 +141,87 @@ class DocBuilder
         return null;
     }
 
-    public function setInterceptor(string $method, string $uri, string $action): void
+    public function setInterceptor(string $method, string $uri, string $action, array $rules = []): void
     {
         $this->attributes['method'] = $method;
         $this->attributes['uri'] = $uri;
         $this->attributes['action'] = $action;
+        $this->attributes['rules'] = $rules;
+    }
+
+    /**
+     * Auto-register a default API call based on intercepted data.
+     */
+    public function autoRegister(): void
+    {
+        $apiCall = new APICall();
+        // The register method will handle:
+        // - Inferring method/URI/Action from attributes
+        // - Inferring Name/Group from attributes
+        // - Generating Params from attributes['rules']
+        // So we just need to push an empty APICall and let register() fill in the blanks
+        $this->register($apiCall);
+    }
+
+    /**
+     * Map Laravel validation rules to Param properties.
+     */
+    protected function generateParamsFromRules(array $rules): array
+    {
+        $params = [];
+
+        foreach ($rules as $field => $ruleString) {
+            // Skip nested array validation keys (e.g., 'items.*') for now
+            if (str_contains($field, '*')) {
+                continue;
+            }
+
+            $ruleArray = is_array($ruleString) ? $ruleString : explode('|', $ruleString);
+
+            // Determine type
+            $type = Param::TYPE_STRING;
+            if (in_array('integer', $ruleArray) || in_array('numeric', $ruleArray)) {
+                $type = Param::TYPE_INTEGER;
+            } elseif (in_array('boolean', $ruleArray)) {
+                $type = Param::TYPE_BOOLEAN;
+            } elseif (in_array('array', $ruleArray)) {
+                $type = Param::TYPE_ARRAY;
+            } elseif (in_array('file', $ruleArray) || in_array('image', $ruleArray)) {
+                $type = Param::TYPE_FILE;
+            }
+
+            $param = new Param($field, $type, ucfirst(str_replace('_', ' ', $field)));
+
+            // Required/Optional
+            if (in_array('required', $ruleArray)) {
+                $param->required();
+            } elseif (in_array('nullable', $ruleArray) || in_array('sometimes', $ruleArray)) {
+                $param->optional();
+            } else {
+                // Default to optional if not explicitly required
+                $param->optional();
+            }
+
+            // Min/Max
+            foreach ($ruleArray as $rule) {
+                if (is_string($rule)) {
+                    if (str_starts_with($rule, 'min:')) {
+                        $param->min((float) substr($rule, 4));
+                    }
+                    if (str_starts_with($rule, 'max:')) {
+                        $param->max((float) substr($rule, 4));
+                    }
+                    if (str_starts_with($rule, 'in:')) {
+                        $values = explode(',', substr($rule, 3));
+                        $param->enum($values);
+                    }
+                }
+            }
+
+            $params[] = $param;
+        }
+
+        return $params;
     }
 
     public function clearInterceptor(): void

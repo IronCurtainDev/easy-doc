@@ -34,6 +34,7 @@ class EasyDocServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 GenerateDocsCommand::class,
+                Console\Commands\InstallCommand::class,
             ]);
 
             // Publish configuration

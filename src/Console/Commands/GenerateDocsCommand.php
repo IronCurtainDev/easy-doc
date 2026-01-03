@@ -24,6 +24,7 @@ class GenerateDocsCommand extends Command
     protected $signature = 'easy-doc:generate
                             {--format=both : Output format: swagger2, openapi3, or both}
                             {--reset : Reset and start fresh}
+                            {--auto : Auto-generate documentation for all endpoints}
                             {--no-apidoc : Skip ApiDoc HTML generation}
                             {--no-files-output : Do not show generated files}';
 
@@ -224,11 +225,40 @@ class GenerateDocsCommand extends Command
             return;
         }
 
+        // Spy on FormRequest injection
+        $rules = [];
+        try {
+            $methodReflection = $reflection->getMethod($method);
+            foreach ($methodReflection->getParameters() as $param) {
+                $type = $param->getType();
+                if ($type && !$type->isBuiltin()) {
+                    $paramClass = $type->getName();
+                    if (class_exists($paramClass) && is_subclass_of($paramClass, \Illuminate\Foundation\Http\FormRequest::class)) {
+                        // Instantiate the FormRequest to get rules
+                        // We use app() to resolve dependencies if any
+                        try {
+                            $formRequest = app($paramClass);
+                            if (method_exists($formRequest, 'rules')) {
+                                $rules = $formRequest->rules();
+                            }
+                        } catch (\Throwable $e) {
+                            // Ignore if we can't instantiate or get rules
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore reflection errors
+        }
+
         $this->docBuilder->setInterceptor(
             $route->methods()[0] ?? 'GET',
             $route->uri(),
-            $controllerAction
+            $controllerAction,
+            $rules // Pass captured rules
         );
+
+        $initialCount = $this->docBuilder->getApiCalls()->count();
 
         $request = \Illuminate\Http\Request::create(
             $route->uri(),
@@ -239,6 +269,13 @@ class GenerateDocsCommand extends Command
             $controllerInstance = app($controller);
             $controllerInstance->$method($request);
         } finally {
+            // Auto-generation Check
+            $finalCount = $this->docBuilder->getApiCalls()->count();
+            if ($finalCount === $initialCount && $this->option('auto')) {
+                $this->docBuilder->autoRegister();
+                $this->info("  Auto-generated: {$route->uri()}");
+            }
+
             $this->docBuilder->clearInterceptor();
         }
     }
