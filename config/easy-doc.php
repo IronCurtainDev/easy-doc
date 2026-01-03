@@ -94,6 +94,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Model Auto-Discovery
+    |--------------------------------------------------------------------------
+    |
+    | Automatically discover Eloquent models and register them as schemas.
+    | This allows you to use them in TypeScript generation without manual setup.
+    |
+    */
+    'auto_discover_models' => true,
+    'model_path' => app_path('Models'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Server Configuration
     |--------------------------------------------------------------------------
     |

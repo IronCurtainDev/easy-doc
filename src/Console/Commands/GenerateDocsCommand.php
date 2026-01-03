@@ -84,6 +84,7 @@ class GenerateDocsCommand extends Command
 
         try {
             $this->defineDefaultHeaders();
+            $this->autoDiscoverModels();
             $this->hitRoutesAndLoadDocs();
             $this->createDocSourceFiles();
 
@@ -361,6 +362,63 @@ class GenerateDocsCommand extends Command
         $destinationPath = $this->docsFolder . DIRECTORY_SEPARATOR . 'index.html';
         File::copy($sourcePath, $destinationPath);
         $this->createdFiles[] = ['Swagger UI (HTML)', $this->stripBasePath($destinationPath)];
+    }
+
+    protected function autoDiscoverModels(): void
+    {
+        if (!config('easy-doc.auto_discover_models', true)) {
+            return;
+        }
+
+        $modelPath = config('easy-doc.model_path', app_path('Models'));
+
+        if (!File::isDirectory($modelPath)) {
+            return;
+        }
+
+        if (!class_exists(\Symfony\Component\Finder\Finder::class)) {
+            $this->warn('Symfony Directory Finder component not installed. Model discovery disabled.');
+            return;
+        }
+
+        $files = \Symfony\Component\Finder\Finder::create()
+            ->in($modelPath)
+            ->files()
+            ->name('*.php');
+
+        foreach ($files as $file) {
+            $className = $this->getClassFromFile($file);
+
+            if (
+                $className &&
+                class_exists($className) &&
+                is_subclass_of($className, 'Illuminate\Database\Eloquent\Model') &&
+                ! (new \ReflectionClass($className))->isAbstract()
+            ) {
+                try {
+                    \EasyDoc\Docs\SchemaBuilder::fromModel($className);
+                    // $this->info("Model discovered: {$className}");
+                } catch (\Throwable $e) {
+                    if ($this->output->isVerbose()) {
+                        $this->warn("Failed to register model {$className}: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+    }
+
+    protected function getClassFromFile(\Symfony\Component\Finder\SplFileInfo $file): ?string
+    {
+        $contents = $file->getContents();
+
+        if (!preg_match('/namespace\s+(.+?);/', $contents, $matches)) {
+            return null;
+        }
+
+        $namespace = $matches[1];
+        $class = $file->getBasename('.php');
+
+        return $namespace . '\\' . $class;
     }
 
     protected function createSwaggerJson(): void

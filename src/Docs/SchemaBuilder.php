@@ -257,6 +257,7 @@ class SchemaBuilder
         $columns = $connection->getSchemaBuilder()->getColumnListing($table);
 
         $properties = [];
+        $required = [];
 
         foreach ($columns as $column) {
             // Skip excluded columns
@@ -275,15 +276,27 @@ class SchemaBuilder
             ];
 
             // Add nullable info
-            if ($column !== 'id' && !in_array($column, ['created_at', 'updated_at'])) {
-                // Most fields could be nullable, but we don't make them required by default
+            $isTimestamp = in_array($column, ['created_at', 'updated_at', 'deleted_at', 'email_verified_at']);
+            $isId = $column === 'id' || $column === 'uuid';
+
+            // Heuristic: If we can't determine nullability from DB without Doctrine,
+            // we assume ID and timestamps (except deleted_at) are required.
+            // Everything else is optional by default to be safe.
+            if ($isId || ($isTimestamp && $column !== 'deleted_at' && $column !== 'email_verified_at')) {
+                $required[] = $column;
+            } else {
+                $properties[$column]['nullable'] = true;
             }
         }
 
         // Merge with additional properties
         $properties = array_merge($properties, $include);
 
-        self::define($name, $properties);
+        self::define($name, [
+            'type' => 'object',
+            'properties' => $properties,
+            'required' => $required ?? [],
+        ]);
     }
 
     /**

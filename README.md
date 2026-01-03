@@ -455,6 +455,13 @@ Automatically generate TypeScript interfaces for your API responses.
 2. Check `public/docs/types.ts`
 3. Import them in your frontend: `import { UserResponse } from './types';`
 
+### Model Auto-Discovery 🕵️‍♂️
+
+EasyDoc automatically finds all your Eloquent models in `app/Models` and registers them for documentation.
+
+- No need to manually call `SchemaBuilder::fromModel()`.
+- Disabling this: Set `'auto_discover_models' => false` in `config/easy-doc.php`.
+
 ## Requirements
 
 - PHP 8.2+
