@@ -17,7 +17,9 @@ return [
         'version' => '1.0.0',
     ],
 
-    // Base path for API routes
+    // Base path for API routes (Optional)
+    // Used only for Swagger basePath display. Actual routes are read from your api.php.
+    // Set to null or empty string if you don't want a basePath in Swagger spec.
     'base_path' => '/api/v1',
 
     /*
