@@ -84,6 +84,12 @@ return [
     'output' => [
         'path' => public_path('docs'),
         'formats' => ['swagger2', 'openapi3', 'postman'], // Available: swagger2, openapi3, postman
+
+        // TypeScript Type Generation
+        'typescript' => [
+            'enabled' => true,
+            'file' => 'types.ts',
+        ],
     ],
 
     /*

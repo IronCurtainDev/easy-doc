@@ -97,6 +97,20 @@ class GenerateDocsCommand extends Command
 
             $this->createPostmanCollection();
             $this->createPostmanEnvironment();
+            if ($this->format === 'both' || $this->format === 'postman') {
+                $this->generatePostmanCollection($apiCalls);
+            }
+
+            // TypeScript Generation
+            $tsConfig = config('easy-doc.output.typescript', []);
+            if ($tsConfig['enabled'] ?? false) {
+                $tsGenerator = new \EasyDoc\Domain\FileGenerators\TypeScript\TypeScriptGenerator();
+                $tsContent = $tsGenerator->generate();
+                $tsFile = $this->docsFolder . '/' . ($tsConfig['file'] ?? 'types.ts');
+                File::put($tsFile, $tsContent);
+                $this->createdFiles[] = ['TypeScript Definitions', $tsFile];
+            }
+
             $this->copySwaggerUI();
 
             if (!$this->option('no-apidoc')) {
