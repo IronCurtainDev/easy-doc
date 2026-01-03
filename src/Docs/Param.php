@@ -38,6 +38,10 @@ class Param implements Arrayable, \JsonSerializable
     protected mixed $items = null;
     protected ?string $variable = null;
     protected mixed $example = null;
+    protected ?array $enum = null;
+    protected mixed $min = null;
+    protected mixed $max = null;
+    protected ?string $pattern = null;
 
     public function __construct(
         ?string $fieldName = null,
@@ -216,6 +220,10 @@ class Param implements Arrayable, \JsonSerializable
             'example' => $this->example,
             'collectionFormat' => $this->collectionFormat,
             'items' => $this->items,
+            'enum' => $this->enum,
+            'min' => $this->min,
+            'max' => $this->max,
+            'pattern' => $this->pattern,
         ];
     }
 
@@ -301,5 +309,73 @@ class Param implements Arrayable, \JsonSerializable
         ];
 
         return $this;
+    }
+
+    /**
+     * Set allowed enum values for this parameter.
+     */
+    public function enum(array $values): static
+    {
+        $this->enum = $values;
+        return $this;
+    }
+
+    /**
+     * Get enum values.
+     */
+    public function getEnum(): ?array
+    {
+        return $this->enum;
+    }
+
+    /**
+     * Set minimum value constraint.
+     */
+    public function min(int|float $value): static
+    {
+        $this->min = $value;
+        return $this;
+    }
+
+    /**
+     * Get minimum value.
+     */
+    public function getMin(): int|float|null
+    {
+        return $this->min;
+    }
+
+    /**
+     * Set maximum value constraint.
+     */
+    public function max(int|float $value): static
+    {
+        $this->max = $value;
+        return $this;
+    }
+
+    /**
+     * Get maximum value.
+     */
+    public function getMax(): int|float|null
+    {
+        return $this->max;
+    }
+
+    /**
+     * Set regex pattern for validation.
+     */
+    public function pattern(string $regex): static
+    {
+        $this->pattern = $regex;
+        return $this;
+    }
+
+    /**
+     * Get regex pattern.
+     */
+    public function getPattern(): ?string
+    {
+        return $this->pattern;
     }
 }

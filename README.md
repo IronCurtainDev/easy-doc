@@ -146,6 +146,119 @@ new Param('email', 'string', 'User email address')
 - `array` - Arrays
 - `file` - File uploads
 
+## 🪄 Magic Methods (Auto-Schema)
+
+Forget defining schemas manually! Just pass your Eloquent model:
+
+```php
+// 1. Single Object Response
+->setSuccessObject(User::class)
+// Auto-generates User schema and returns { success: true, data: {...} }
+
+// 2. List Response
+->setSuccessList(User::class)
+// Auto-generates User schema and returns { success: true, data: [{...}, {...}] }
+
+// 3. Paginated Response
+->setSuccessPaginated(User::class)
+// Auto-generates User schema and returns { success: true, data: [...], meta: {...}, links: {...} }
+```
+
+You can still use `SchemaBuilder::defineResource()` if you need to customize relationships or fields first.
+
+## Parameter Validation
+
+Add validation constraints to your parameters:
+
+```php
+// Enum values (shows as dropdown in Swagger UI)
+(new Param('status', 'string', 'User status'))
+    ->enum(['active', 'inactive', 'pending'])
+
+// Min/max constraints
+(new Param('age', 'integer', 'User age'))
+    ->min(18)
+    ->max(120)
+
+// Regex pattern
+(new Param('phone', 'string', 'Phone number'))
+    ->pattern('^\+[0-9]{10,15}$')
+```
+
+## Query Parameters
+
+Separate query parameters from body parameters:
+
+```php
+->setQueryParams([
+    (new Param('page', 'integer', 'Page number'))->optional()->defaultValue(1),
+    (new Param('per_page', 'integer', 'Items per page'))->optional()->defaultValue(15),
+    (new Param('sort', 'string', 'Sort order'))->enum(['asc', 'desc'])->optional(),
+])
+```
+
+## Tags & Categories
+
+Group your endpoints with tags:
+
+```php
+->setTags(['Authentication', 'Public API'])
+```
+
+## Deprecation
+
+Mark endpoints as deprecated:
+
+```php
+->deprecated('Use /api/v2/users instead')
+```
+
+Deprecated endpoints show with strikethrough in Swagger UI.
+
+## Rate Limiting
+
+Document rate limits for your endpoints:
+
+```php
+->rateLimit(60, 'minute')  // 60 requests per minute
+->rateLimit(1000, 'hour')  // 1000 requests per hour
+```
+
+## Path Parameters
+
+Auto-detect path parameters from your route:
+
+```php
+// Route: /api/v1/users/{id}
+->autoDetectPathParams()  // Automatically documents {id} parameter
+
+// Or add manually
+->addPathParam(new Param('id', 'integer', 'User ID'))
+```
+
+## Reusable Schemas
+
+Define schemas once, use them everywhere:
+
+```php
+use EasyDoc\Docs\SchemaBuilder;
+
+// Define in a service provider or config
+SchemaBuilder::define('User', [
+    'id' => 'integer',
+    'name' => 'string',
+    'email' => 'string',
+    'created_at' => 'string',
+]);
+
+// Use predefined helpers
+SchemaBuilder::defineErrorResponse();
+SchemaBuilder::defineSuccessResponse();
+
+// Reference in your endpoints
+->setSuccessSchema('User')
+```
+
 ## Response Examples
 
 Document what your API returns so frontend developers know exactly what to expect:

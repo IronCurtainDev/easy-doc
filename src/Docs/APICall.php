@@ -31,6 +31,13 @@ class APICall
     protected ?string $operationId = null;
     protected array $successExamples = [];
     protected array $errorExamples = [];
+    protected array $queryParams = [];
+    protected array $pathParams = [];
+    protected array $tags = [];
+    protected ?string $deprecated = null;
+    protected ?array $rateLimit = null;
+    protected ?string $successSchema = null;
+    protected ?string $errorSchema = null;
 
     public function getRoute(): ?string
     {
@@ -343,7 +350,65 @@ class APICall
     public function setSuccessObject(mixed $model): static
     {
         $this->successObject = $model;
+
+        // If it's a class string, auto-register the schema
+        if (is_string($model) && class_exists($model)) {
+            $this->ensureSchemaExists($model);
+
+            $reflection = new \ReflectionClass($model);
+            $this->successSchema = $reflection->getShortName() . 'Response';
+        }
+
         return $this;
+    }
+
+    /**
+     * Set a list of objects as the success response.
+     * Auto-generates schemas for the model and the collection wrapper.
+     */
+    public function setSuccessList(string $modelClass): static
+    {
+        if (class_exists($modelClass)) {
+            $this->ensureSchemaExists($modelClass);
+
+            $reflection = new \ReflectionClass($modelClass);
+            $this->successSchema = $reflection->getShortName() . 'CollectionResponse';
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set a paginated list as the success response.
+     * Auto-generates schemas for the model and the paginated wrapper.
+     */
+    public function setSuccessPaginated(string $modelClass): static
+    {
+        if (class_exists($modelClass)) {
+            $this->ensureSchemaExists($modelClass);
+
+            $reflection = new \ReflectionClass($modelClass);
+            $this->successSchema = $reflection->getShortName() . 'PaginatedResponse';
+        }
+
+        return $this;
+    }
+
+    /**
+     * Helper to ensure model schema and all its variants exist.
+     */
+    protected function ensureSchemaExists(string $modelClass): void
+    {
+        $reflection = new \ReflectionClass($modelClass);
+        $schemaName = $reflection->getShortName();
+
+        // 1. Create base model schema if missing
+        if (!SchemaBuilder::has($schemaName)) {
+            SchemaBuilder::fromModel($modelClass, $schemaName);
+        }
+
+        // 2. Ensure all response wrappers exist (Response, CollectionResponse, PaginatedResponse)
+        SchemaBuilder::defineAllResponses($schemaName);
     }
 
     public function getSuccessPaginatedObject(): mixed
@@ -387,6 +452,204 @@ class APICall
     public function getSuccessParams(): array
     {
         return $this->successParams;
+    }
+
+    // =====================================================
+    // Query Parameters
+    // =====================================================
+
+    /**
+     * Set query parameters for this endpoint.
+     */
+    public function setQueryParams(array $params): static
+    {
+        foreach ($params as $param) {
+            if ($param instanceof Param) {
+                $param->setLocation(Param::LOCATION_QUERY);
+                $this->queryParams[] = $param;
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * Add a single query parameter.
+     */
+    public function addQueryParam(Param $param): static
+    {
+        $param->setLocation(Param::LOCATION_QUERY);
+        $this->queryParams[] = $param;
+        return $this;
+    }
+
+    /**
+     * Get query parameters.
+     */
+    public function getQueryParams(): array
+    {
+        return $this->queryParams;
+    }
+
+    // =====================================================
+    // Path Parameters
+    // =====================================================
+
+    /**
+     * Auto-detect path parameters from the route.
+     * Extracts {id}, {user}, etc.
+     */
+    public function autoDetectPathParams(): static
+    {
+        if (!$this->route) {
+            return $this;
+        }
+
+        preg_match_all('/\{([^}]+)\}/', $this->route, $matches);
+
+        foreach ($matches[1] as $paramName) {
+            // Skip optional parameters marker
+            $paramName = rtrim($paramName, '?');
+
+            $param = new Param($paramName, Param::TYPE_STRING, ucfirst($paramName) . ' ID');
+            $param->setLocation(Param::LOCATION_PATH);
+            $this->pathParams[] = $param;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get path parameters.
+     */
+    public function getPathParams(): array
+    {
+        return $this->pathParams;
+    }
+
+    /**
+     * Add a path parameter manually.
+     */
+    public function addPathParam(Param $param): static
+    {
+        $param->setLocation(Param::LOCATION_PATH);
+        $this->pathParams[] = $param;
+        return $this;
+    }
+
+    // =====================================================
+    // Tags / Categories
+    // =====================================================
+
+    /**
+     * Set tags for grouping this endpoint.
+     */
+    public function setTags(array $tags): static
+    {
+        $this->tags = $tags;
+        return $this;
+    }
+
+    /**
+     * Get tags.
+     */
+    public function getTags(): array
+    {
+        // Fall back to group if no tags set
+        if (empty($this->tags) && $this->group) {
+            return [$this->group];
+        }
+        return $this->tags;
+    }
+
+    // =====================================================
+    // Deprecation
+    // =====================================================
+
+    /**
+     * Mark this endpoint as deprecated.
+     */
+    public function deprecated(?string $message = null): static
+    {
+        $this->deprecated = $message ?? 'This endpoint is deprecated.';
+        return $this;
+    }
+
+    /**
+     * Check if endpoint is deprecated.
+     */
+    public function isDeprecated(): bool
+    {
+        return $this->deprecated !== null;
+    }
+
+    /**
+     * Get deprecation message.
+     */
+    public function getDeprecationMessage(): ?string
+    {
+        return $this->deprecated;
+    }
+
+    // =====================================================
+    // Rate Limiting
+    // =====================================================
+
+    /**
+     * Set rate limit for this endpoint.
+     */
+    public function rateLimit(int $limit, string $period = 'minute'): static
+    {
+        $this->rateLimit = [
+            'limit' => $limit,
+            'period' => $period,
+        ];
+        return $this;
+    }
+
+    /**
+     * Get rate limit configuration.
+     */
+    public function getRateLimit(): ?array
+    {
+        return $this->rateLimit;
+    }
+
+    // =====================================================
+    // Schema References
+    // =====================================================
+
+    /**
+     * Set success response schema reference.
+     */
+    public function setSuccessSchema(string $schemaName): static
+    {
+        $this->successSchema = $schemaName;
+        return $this;
+    }
+
+    /**
+     * Get success schema name.
+     */
+    public function getSuccessSchema(): ?string
+    {
+        return $this->successSchema;
+    }
+
+    /**
+     * Set error response schema reference.
+     */
+    public function setErrorSchema(string $schemaName): static
+    {
+        $this->errorSchema = $schemaName;
+        return $this;
+    }
+
+    /**
+     * Get error schema name.
+     */
+    public function getErrorSchema(): ?string
+    {
+        return $this->errorSchema;
     }
 
     public function getApiDoc(): string

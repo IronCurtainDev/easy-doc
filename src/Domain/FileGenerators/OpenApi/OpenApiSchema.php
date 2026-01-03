@@ -251,4 +251,13 @@ class OpenApiSchema extends BaseFileGenerator
 
         return $schemes;
     }
+
+    /**
+     * Add a schema to components.
+     */
+    public function addSchema(string $name, array $schema): static
+    {
+        $this->schema['components']['schemas'][$name] = $schema;
+        return $this;
+    }
 }

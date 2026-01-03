@@ -150,4 +150,13 @@ class SwaggerV2 extends BaseFileGenerator
 
         return $schemes;
     }
+
+    /**
+     * Add a schema definition.
+     */
+    public function addDefinition(string $name, array $schema): static
+    {
+        $this->schema['definitions'][$name] = $schema;
+        return $this;
+    }
 }

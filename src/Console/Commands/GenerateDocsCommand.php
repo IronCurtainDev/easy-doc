@@ -297,7 +297,7 @@ class GenerateDocsCommand extends Command
     protected function copySwaggerUI(): void
     {
         $sourcePath = dirname(__DIR__, 2) . '/resources/assets/docs/swagger.html';
-        
+
         if (!File::exists($sourcePath)) {
             $sourcePath = dirname(__DIR__, 3) . '/resources/assets/docs/swagger.html';
         }
@@ -325,6 +325,12 @@ class GenerateDocsCommand extends Command
         $swaggerConfig->setBasePath($this->basePath);
         $swaggerConfig->setServerUrl(config('app.url'));
 
+        // Add defined schemas
+        $schemas = \EasyDoc\Docs\SchemaBuilder::all();
+        foreach ($schemas as $name => $schema) {
+            $swaggerConfig->addDefinition($name, $schema);
+        }
+
         foreach ($items as $item) {
             $route = $item->getRoute();
             if (empty($route) || !empty($item->getDefine())) {
@@ -335,10 +341,20 @@ class GenerateDocsCommand extends Command
             $parameters = $this->buildParameters($item, $method);
             $pathSuffix = str_replace(ltrim($this->basePath, '/'), '', $route);
 
+            // Build description with rate limit info
+            $description = $item->getDescription() ?? '';
+            if ($item->getRateLimit()) {
+                $rateLimit = $item->getRateLimit();
+                $description .= "\n\n**Rate Limit:** {$rateLimit['limit']} requests per {$rateLimit['period']}";
+            }
+            if ($item->isDeprecated()) {
+                $description = "**DEPRECATED:** {$item->getDeprecationMessage()}\n\n" . $description;
+            }
+
             $pathData = [
-                'tags' => [$item->getGroup()],
+                'tags' => $item->getTags(),
                 'summary' => $item->getName(),
-                'description' => $item->getDescription() ?? '',
+                'description' => $description,
                 'operationId' => $item->getOperationId(),
                 'consumes' => ['application/json'],
                 'produces' => ['application/json'],
@@ -346,6 +362,16 @@ class GenerateDocsCommand extends Command
                 'security' => $swaggerConfig->getSecuritySchemes(),
                 'responses' => $this->buildResponses($item),
             ];
+
+            // Add deprecation flag
+            if ($item->isDeprecated()) {
+                $pathData['deprecated'] = true;
+            }
+
+            // Add rate limit extension
+            if ($item->getRateLimit()) {
+                $pathData['x-rateLimit'] = $item->getRateLimit();
+            }
 
             $swaggerConfig->addPathData($pathSuffix, $method, $pathData);
         }
@@ -372,6 +398,12 @@ class GenerateDocsCommand extends Command
         $openApiConfig->setBasePath($this->basePath);
         $openApiConfig->setServerUrl(config('app.url') . $this->basePath, 'Current Server');
 
+        // Add defined schemas
+        $schemas = \EasyDoc\Docs\SchemaBuilder::all();
+        foreach ($schemas as $name => $schema) {
+            $openApiConfig->addSchema($name, $schema);
+        }
+
         foreach ($items as $item) {
             $route = $item->getRoute();
             if (empty($route) || !empty($item->getDefine())) {
@@ -382,15 +414,30 @@ class GenerateDocsCommand extends Command
             $parameters = $this->buildParameters($item, $method);
             $pathSuffix = str_replace(ltrim($this->basePath, '/'), '', $route);
 
+            // Build description with rate limit info
+            $description = $item->getDescription() ?? '';
+            if ($item->getRateLimit()) {
+                $rateLimit = $item->getRateLimit();
+                $description .= "\n\n**Rate Limit:** {$rateLimit['limit']} requests per {$rateLimit['period']}";
+            }
+            if ($item->isDeprecated()) {
+                $description = "**DEPRECATED:** {$item->getDeprecationMessage()}\n\n" . $description;
+            }
+
             $pathData = [
-                'tags' => [$item->getGroup()],
+                'tags' => $item->getTags(),
                 'summary' => $item->getName(),
-                'description' => $item->getDescription() ?? '',
+                'description' => $description,
                 'operationId' => $item->getOperationId(),
                 'parameters' => $parameters,
                 'security' => $openApiConfig->getSecuritySchemes(),
                 'responses' => $this->buildResponses($item),
             ];
+
+            // Add deprecation flag
+            if ($item->isDeprecated()) {
+                $pathData['deprecated'] = true;
+            }
 
             $openApiConfig->addPathData($pathSuffix, $method, $pathData);
         }
@@ -430,6 +477,20 @@ class GenerateDocsCommand extends Command
     protected function buildParameters(APICall $item, string $method): array
     {
         $parameters = [];
+
+        // Add path parameters
+        foreach ($item->getPathParams() as $param) {
+            $paramData = $this->buildParamData($param, Param::LOCATION_PATH);
+            $parameters[] = $paramData;
+        }
+
+        // Add query parameters
+        foreach ($item->getQueryParams() as $param) {
+            $paramData = $this->buildParamData($param, Param::LOCATION_QUERY);
+            $parameters[] = $paramData;
+        }
+
+        // Add headers and body params
         $allParams = array_merge($item->getHeaders(), $item->getParams());
 
         foreach ($allParams as $param) {
@@ -438,16 +499,53 @@ class GenerateDocsCommand extends Command
                 $location = $method === 'get' ? Param::LOCATION_QUERY : Param::LOCATION_FORM;
             }
 
-            $parameters[] = [
-                'name' => $param->getName(),
-                'in' => $location,
-                'required' => $param->getRequired(),
-                'description' => $param->getDescription(),
-                'type' => strtolower($param->getDataType()),
-            ];
+            $paramData = $this->buildParamData($param, $location);
+            $parameters[] = $paramData;
         }
 
         return $parameters;
+    }
+
+    /**
+     * Build parameter data array with enum, min, max, pattern support.
+     */
+    protected function buildParamData(Param $param, string $location): array
+    {
+        $paramData = [
+            'name' => $param->getName(),
+            'in' => $location,
+            'required' => $param->getRequired(),
+            'description' => $param->getDescription(),
+            'type' => strtolower($param->getDataType()),
+        ];
+
+        // Add enum values if set
+        if ($param->getEnum() !== null) {
+            $paramData['enum'] = $param->getEnum();
+        }
+
+        // Add validation constraints
+        if ($param->getMin() !== null) {
+            $paramData['minimum'] = $param->getMin();
+        }
+
+        if ($param->getMax() !== null) {
+            $paramData['maximum'] = $param->getMax();
+        }
+
+        if ($param->getPattern() !== null) {
+            $paramData['pattern'] = $param->getPattern();
+        }
+
+        if ($param->getDefaultValue() !== null) {
+            $paramData['default'] = $param->getDefaultValue();
+        }
+
+        if ($param->getExample() !== null) {
+            $paramData['example'] = $param->getExample();
+        }
+
+        return $paramData;
     }
 
     protected function stripBasePath(string $path): string
