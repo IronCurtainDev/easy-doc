@@ -447,6 +447,14 @@ Configure it once in `config/easy-doc.php`:
 
 Now, `setSuccessObject(User::class)` will implicitly use this wrapper structure.
 
+### Bridge to Frontend (TypeScript)
+
+Automatically generate TypeScript interfaces for your API responses.
+
+1. Run `php artisan easy-doc:generate`
+2. Check `public/docs/types.ts`
+3. Import them in your frontend: `import { UserResponse } from './types';`
+
 ## Requirements
 
 - PHP 8.2+
