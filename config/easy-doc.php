@@ -22,43 +22,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Authentication Headers Configuration
+    | Authentication Headers Configuration (Optional)
     |--------------------------------------------------------------------------
     |
-    | Define your authentication headers here. You can use any header names
-    | that match your API's authentication scheme.
+    | This is OPTIONAL. Define reusable authentication headers here if you want
+    | to reference them in your API documentation using withConfigHeaders().
+    |
+    | If you prefer, you can define headers directly in each endpoint instead.
     |
     | Supported types:
-    | - 'api_key': For static API keys (e.g., x-api-key, api-key, Authorization)
-    | - 'bearer': For bearer tokens (e.g., x-access-token, Authorization)
+    | - 'api_key': For static API keys (e.g., x-api-key, api-key)
+    | - 'bearer': For bearer tokens (e.g., x-access-token)
     | - 'custom': For any custom header type
     |
-    | Security scheme options (for Swagger):
-    | - 'apiKey': API key in header
-    | - 'http': HTTP authentication (bearer, basic)
-    | - 'oauth2': OAuth 2.0
+    | Example configuration:
+    | [
+    |     'name' => 'x-api-key',
+    |     'type' => 'api_key',
+    |     'description' => 'API Key for authentication',
+    |     'required' => true,
+    |     'security_scheme' => 'apiKey',
+    |     'example' => '{{x-api-key}}',
+    | ],
     |
     */
     'auth_headers' => [
-        // Example: API Key header
-        [
-            'name' => 'x-api-key',           // Your header name (can be anything)
-            'type' => 'api_key',             // Type: api_key, bearer, custom
-            'description' => 'API Key for authentication',
-            'required' => true,
-            'security_scheme' => 'apiKey',   // Swagger security scheme name
-            'example' => '{{x-api-key}}',    // Example value for Postman
-        ],
-
-        // Example: Access Token header (uncomment to enable)
-        // [
-        //     'name' => 'x-access-token',
-        //     'type' => 'bearer',
-        //     'description' => 'User authentication token',
-        //     'required' => false,
-        //     'security_scheme' => 'accessToken',
-        //     'example' => '{{x-access-token}}',
-        // ],
+        // Add your reusable auth headers here if needed
     ],
 
     /*

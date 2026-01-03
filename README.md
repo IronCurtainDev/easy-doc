@@ -34,30 +34,24 @@ Add to your `.env` file:
 EASY_DOC_VISIBLE=true
 ```
 
-### 3. Configure Your Headers
+### 3. Configure Your Headers (Optional)
 
-Edit `config/easy-doc.php`:
+If you want to define reusable authentication headers, edit `config/easy-doc.php`:
 
 ```php
 'auth_headers' => [
     [
-        'name' => 'api-key',
+        'name' => 'x-api-key',
         'type' => 'api_key',
-        'description' => 'Global API Key',
+        'description' => 'API Key for authentication',
         'required' => true,
         'security_scheme' => 'apiKey',
-        'example' => '12345',
-    ],
-    [
-        'name' => 'x-access-token',
-        'type' => 'api_key',
-        'description' => 'Access Token for authenticated routes',
-        'required' => false,
-        'security_scheme' => 'accessToken',
-        'example' => 'mock-token',
+        'example' => '{{x-api-key}}',
     ],
 ],
 ```
+
+> **Note:** This step is optional. You can document APIs without configuring global auth headers.
 
 ### 4. Document Your Endpoints
 
@@ -108,25 +102,25 @@ php artisan easy-doc:generate
 
 After generation, access your docs:
 
-| URL | Description |
-|-----|-------------|
-| `/easy-doc` | Documentation viewer dashboard |
-| `/docs/index.html` | Interactive Swagger UI |
-| `/docs/swagger.json` | Swagger 2.0 JSON |
-| `/docs/openapi.json` | OpenAPI 3.0 JSON |
-| `/docs/postman_collection.json` | Postman Collection |
+| URL                             | Description                    |
+| ------------------------------- | ------------------------------ |
+| `/easy-doc`                     | Documentation viewer dashboard |
+| `/docs/index.html`              | Interactive Swagger UI         |
+| `/docs/swagger.json`            | Swagger 2.0 JSON               |
+| `/docs/openapi.json`            | OpenAPI 3.0 JSON               |
+| `/docs/postman_collection.json` | Postman Collection             |
 
 ## Generated Files
 
-| File | Description |
-|------|-------------|
-| `public/docs/index.html` | **Interactive Swagger UI** |
-| `public/docs/swagger.json` | Swagger 2.0 specification |
-| `public/docs/swagger.yml` | Swagger 2.0 YAML |
-| `public/docs/openapi.json` | OpenAPI 3.0 specification |
-| `public/docs/openapi.yml` | OpenAPI 3.0 YAML |
-| `public/docs/postman_collection.json` | Postman Collection |
-| `public/docs/api/index.html` | ApiDoc HTML (requires apidoc) |
+| File                                  | Description                   |
+| ------------------------------------- | ----------------------------- |
+| `public/docs/index.html`              | **Interactive Swagger UI**    |
+| `public/docs/swagger.json`            | Swagger 2.0 specification     |
+| `public/docs/swagger.yml`             | Swagger 2.0 YAML              |
+| `public/docs/openapi.json`            | OpenAPI 3.0 specification     |
+| `public/docs/openapi.yml`             | OpenAPI 3.0 YAML              |
+| `public/docs/postman_collection.json` | Postman Collection            |
+| `public/docs/api/index.html`          | ApiDoc HTML (requires apidoc) |
 
 ## Param Class Usage
 
@@ -144,13 +138,13 @@ new Param('email', 'string', 'User email address')
 ```
 
 **Available Types:**
+
 - `string` - Text values
 - `integer` - Whole numbers
 - `number` - Decimal numbers
 - `boolean` - True/false
 - `array` - Arrays
 - `file` - File uploads
-
 
 ## Response Examples
 
@@ -176,6 +170,7 @@ Document what your API returns so frontend developers know exactly what to expec
 ```
 
 **Parameters:**
+
 - `$example` - The response body (array or object)
 - `$statusCode` - HTTP status code (default: 200 for success, 400 for error)
 - `$description` - Optional description for the response
@@ -187,10 +182,12 @@ Easy-doc automatically generates a Postman environment file with your configured
 **Generated file:** `public/docs/postman_environment.json`
 
 **Includes:**
+
 - `base_url` - Your API base URL
 - All configured auth headers (e.g., `api_key`, `x_access_token`)
 
 Import both the collection and environment into Postman to start testing immediately!
+
 ## Selective Header Authentication
 
 Use `->withConfigHeaders()` to add headers to specific endpoints:
