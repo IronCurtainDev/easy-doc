@@ -108,6 +108,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Global Response Wrapper
+    |--------------------------------------------------------------------------
+    |
+    | Define a global wrapper for your API responses.
+    | Use '__DATA__' as a placeholder for the actual response data.
+    | Set to null to disable wrapping.
+    |
+    | Example:
+    | 'response_wrapper' => [
+    |     'success' => true,
+    |     'message' => 'Success',
+    |     'data' => '__DATA__'
+    | ],
+    */
+    'response_wrapper' => null,
+
+    /*
+    |--------------------------------------------------------------------------
     | Documentation Viewer
     |--------------------------------------------------------------------------
     |

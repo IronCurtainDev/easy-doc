@@ -423,6 +423,30 @@ return [
 ];
 ```
 
+## 🔮 "Alive" Documentation
+
+### Smart Examples (Faker)
+
+When you use `SchemaBuilder::fromModel(User::class)`, we automatically inspect your database schema and generate **realistic example data** for your documentation using standard Faker formatters.
+
+- `email` field -> Generates "jane.doe@example.com"
+- `phone` field -> Generates "+1-202-555-0109"
+
+### Global Response Wrappers
+
+Most APIs wrap their responses (e.g., `{ "success": true, "data": ... }`).
+Configure it once in `config/easy-doc.php`:
+
+```php
+'response_wrapper' => [
+    'success' => true,
+    'code' => 200,
+    'result' => '__DATA__', // Values are injected here
+],
+```
+
+Now, `setSuccessObject(User::class)` will implicitly use this wrapper structure.
+
 ## Requirements
 
 - PHP 8.2+

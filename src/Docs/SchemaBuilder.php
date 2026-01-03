@@ -223,6 +223,7 @@ class SchemaBuilder
     /**
      * Define a schema from an Eloquent model.
      * Automatically reads the database columns and their types.
+     * With "Smart Examples" using Faker if available.
      *
      * @param string $modelClass Fully qualified model class name (e.g., App\Models\User::class)
      * @param string|null $schemaName Optional custom schema name (defaults to model basename)
@@ -265,10 +266,12 @@ class SchemaBuilder
 
             // Get column type
             $type = $connection->getSchemaBuilder()->getColumnType($table, $column);
+            $swaggerType = self::databaseTypeToSwagger($type);
 
             $properties[$column] = [
-                'type' => self::databaseTypeToSwagger($type),
+                'type' => $swaggerType,
                 'description' => ucfirst(str_replace('_', ' ', $column)),
+                'example' => self::generateFakerExample($column, $swaggerType),
             ];
 
             // Add nullable info
@@ -284,18 +287,48 @@ class SchemaBuilder
     }
 
     /**
-     * Convert database column type to Swagger type.
+     * Generate a realistic example value using Faker based on column name and type.
      */
-    protected static function databaseTypeToSwagger(string $dbType): string
+    protected static function generateFakerExample(string $column, string $type): mixed
     {
-        return match (strtolower($dbType)) {
-            'integer', 'int', 'smallint', 'bigint', 'tinyint' => 'integer',
-            'decimal', 'float', 'double', 'real' => 'number',
-            'boolean', 'bool' => 'boolean',
-            'date', 'datetime', 'timestamp', 'time' => 'string',
-            'json', 'jsonb' => 'object',
-            'text', 'longtext', 'mediumtext' => 'string',
-            default => 'string',
+        // Use the global fake() helper if available, otherwise return null
+        if (!function_exists('fake')) {
+            return null;
+        }
+
+        $faker = fake();
+
+        // 1. Column Name Matches
+        if (str_contains($column, 'email')) return $faker->safeEmail();
+        if ($column === 'name' || str_contains($column, 'full_name')) return $faker->name();
+        if (str_contains($column, 'first_name')) return $faker->firstName();
+        if (str_contains($column, 'last_name')) return $faker->lastName();
+        if (str_contains($column, 'phone')) return $faker->phoneNumber();
+        if (str_contains($column, 'address')) return $faker->address();
+        if (str_contains($column, 'city')) return $faker->city();
+        if (str_contains($column, 'country')) return $faker->country();
+        if (str_contains($column, 'zip') || str_contains($column, 'postal')) return $faker->postcode();
+        if ($column === 'title') return $faker->jobTitle();
+        if (str_contains($column, 'url') || str_contains($column, 'link')) return $faker->url();
+        if (str_contains($column, 'uuid')) return $faker->uuid();
+        if (str_contains($column, 'ip_address')) return $faker->ipv4();
+        if (str_contains($column, 'image') || str_contains($column, 'avatar')) return $faker->imageUrl();
+        if (str_contains($column, 'password')) return 'secret';
+
+        // 2. Type/Suffix Matches
+        if ($column === 'id') return $faker->numberBetween(1, 100);
+        if (str_ends_with($column, '_id')) return $faker->numberBetween(1, 50);
+        if (str_ends_with($column, '_at') || str_contains($column, 'date')) return $faker->dateTime()->format('Y-m-d H:i:s');
+
+        // 3. Fallback by Type
+        return match ($type) {
+            'integer' => $faker->numberBetween(1, 1000),
+            'boolean' => $faker->boolean(),
+            'number' => $faker->randomFloat(2, 10, 1000),
+            'string' => str_contains($column, 'description') || str_contains($column, 'content')
+                ? $faker->sentence()
+                : $faker->word(),
+            default => null,
         };
     }
 
@@ -490,15 +523,43 @@ class SchemaBuilder
             ? ['type' => 'array', 'items' => ['$ref' => '#/definitions/' . $resourceName]]
             : ['$ref' => '#/definitions/' . $resourceName];
 
-        self::$schemas[$name] = [
-            'type' => 'object',
-            'properties' => [
-                'success' => ['type' => 'boolean', 'example' => true],
-                'message' => ['type' => 'string', 'example' => 'Operation successful'],
-                'data' => $dataSchema,
-            ],
-            'required' => ['success', 'data'],
-        ];
+        $configWrapper = config('easy-doc.response_wrapper');
+
+        if ($configWrapper) {
+            $properties = [];
+            foreach ($configWrapper as $key => $example) {
+                if ($example === '__DATA__') {
+                    $properties[$key] = $dataSchema;
+                } else {
+                    $type = gettype($example);
+                    $swaggerType = match ($type) {
+                        'boolean' => 'boolean',
+                        'integer' => 'integer',
+                        'double' => 'number',
+                        default => 'string',
+                    };
+                    $properties[$key] = [
+                        'type' => $swaggerType,
+                        'example' => $example,
+                    ];
+                }
+            }
+            self::$schemas[$name] = [
+                'type' => 'object',
+                'properties' => $properties,
+            ];
+        } else {
+            // Default Standard Wrapper
+            self::$schemas[$name] = [
+                'type' => 'object',
+                'properties' => [
+                    'success' => ['type' => 'boolean', 'example' => true],
+                    'message' => ['type' => 'string', 'example' => 'Operation successful'],
+                    'data' => $dataSchema,
+                ],
+                'required' => ['success', 'data'],
+            ];
+        }
     }
 
     /**
@@ -507,35 +568,72 @@ class SchemaBuilder
      */
     public static function definePaginatedResponseFor(string $resourceName): void
     {
-        self::$schemas[$resourceName . 'PaginatedResponse'] = [
+        $metaSchema = [
             'type' => 'object',
             'properties' => [
-                'success' => ['type' => 'boolean', 'example' => true],
-                'message' => ['type' => 'string'],
-                'data' => ['type' => 'array', 'items' => ['$ref' => '#/definitions/' . $resourceName]],
-                'meta' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'current_page' => ['type' => 'integer', 'example' => 1],
-                        'from' => ['type' => 'integer', 'example' => 1],
-                        'last_page' => ['type' => 'integer', 'example' => 10],
-                        'per_page' => ['type' => 'integer', 'example' => 15],
-                        'to' => ['type' => 'integer', 'example' => 15],
-                        'total' => ['type' => 'integer', 'example' => 150],
-                    ],
-                ],
-                'links' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'first' => ['type' => 'string'],
-                        'last' => ['type' => 'string'],
-                        'prev' => ['type' => 'string', 'nullable' => true],
-                        'next' => ['type' => 'string', 'nullable' => true],
-                    ],
-                ],
+                'current_page' => ['type' => 'integer', 'example' => 1],
+                'from' => ['type' => 'integer', 'example' => 1],
+                'last_page' => ['type' => 'integer', 'example' => 10],
+                'per_page' => ['type' => 'integer', 'example' => 15],
+                'to' => ['type' => 'integer', 'example' => 15],
+                'total' => ['type' => 'integer', 'example' => 150],
             ],
-            'required' => ['success', 'data', 'meta'],
         ];
+
+        $linksSchema = [
+            'type' => 'object',
+            'properties' => [
+                'first' => ['type' => 'string'],
+                'last' => ['type' => 'string'],
+                'prev' => ['type' => 'string', 'nullable' => true],
+                'next' => ['type' => 'string', 'nullable' => true],
+            ],
+        ];
+
+        $dataSchema = ['type' => 'array', 'items' => ['$ref' => '#/definitions/' . $resourceName]];
+
+        $configWrapper = config('easy-doc.response_wrapper');
+
+        if ($configWrapper) {
+            $properties = [];
+            foreach ($configWrapper as $key => $example) {
+                if ($example === '__DATA__') {
+                    $properties[$key] = $dataSchema;
+                } else {
+                    $type = gettype($example);
+                    $swaggerType = match ($type) {
+                        'boolean' => 'boolean',
+                        'integer' => 'integer',
+                        'double' => 'number',
+                        default => 'string',
+                    };
+                    $properties[$key] = [
+                        'type' => $swaggerType,
+                        'example' => $example,
+                    ];
+                }
+            }
+            // Always append meta and links for pagination
+            $properties['meta'] = $metaSchema;
+            $properties['links'] = $linksSchema;
+
+            self::$schemas[$resourceName . 'PaginatedResponse'] = [
+                'type' => 'object',
+                'properties' => $properties,
+            ];
+        } else {
+            self::$schemas[$resourceName . 'PaginatedResponse'] = [
+                'type' => 'object',
+                'properties' => [
+                    'success' => ['type' => 'boolean', 'example' => true],
+                    'message' => ['type' => 'string'],
+                    'data' => $dataSchema,
+                    'meta' => $metaSchema,
+                    'links' => $linksSchema,
+                ],
+                'required' => ['success', 'data', 'meta'],
+            ];
+        }
     }
 
     /**
