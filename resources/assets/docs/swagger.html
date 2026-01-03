@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+    <title>API Documentation</title>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://unpkg.com/swagger-ui-dist@5.9.0/favicon-32x32.png"
+      sizes="32x32"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://unpkg.com/swagger-ui-dist@5.9.0/favicon-16x16.png"
+      sizes="16x16"
+    />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <style>
+      html {
+        box-sizing: border-box;
+        overflow: -moz-scrollbars-vertical;
+        overflow-y: scroll;
+      }
+
+      *,
+      *:before,
+      *:after {
+        box-sizing: inherit;
+      }
+
+      body {
+        margin: 0;
+        background: #fafafa;
+      }
+
+      .topbar {
+        background-color: #1b1b1b;
+      }
+
+      .swagger-ui .info .title {
+        color: #3b4151;
+      }
+
+      .swagger-ui .scheme-container {
+        background: #fff;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.15);
+      }
+
+      /* Custom header */
+      .custom-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px 40px;
+        text-align: center;
+      }
+
+      .custom-header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+
+      .custom-header p {
+        margin: 10px 0 0;
+        opacity: 0.9;
+        font-size: 14px;
+      }
+
+      .format-selector {
+        background: #fff;
+        padding: 15px 40px;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .format-selector label {
+        font-weight: 600;
+        color: #3b4151;
+      }
+
+      .format-selector select {
+        padding: 8px 16px;
+        border: 1px solid #d0d0d0;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      .format-selector .download-links {
+        margin-left: auto;
+        display: flex;
+        gap: 10px;
+      }
+
+      .format-selector .download-links a {
+        padding: 8px 16px;
+        background: #49cc90;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        transition: background 0.2s;
+      }
+
+      .format-selector .download-links a:hover {
+        background: #3db07e;
+      }
+
+      .format-selector .download-links a.secondary {
+        background: #61affe;
+      }
+
+      .format-selector .download-links a.secondary:hover {
+        background: #4a9fe8;
+      }
+
+      .format-selector .download-links a.interactive {
+        background: #f93e3e;
+      }
+
+      .format-selector .download-links a.interactive:hover {
+        background: #e02d2d;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="custom-header">
+      <h1 id="api-title">API Documentation</h1>
+      <p id="api-description">
+        Interactive API documentation powered by Swagger UI
+      </p>
+    </div>
+
+    <div class="format-selector">
+      <label for="spec-format">Specification Format:</label>
+      <select id="spec-format" onchange="changeFormat(this.value)">
+        <option value="swagger">Swagger 2.0 (JSON)</option>
+        <option value="swagger-yaml">Swagger 2.0 (YAML)</option>
+        <option value="openapi">OpenAPI 3.0 (JSON)</option>
+        <option value="openapi-yaml">OpenAPI 3.0 (YAML)</option>
+      </select>
+
+      <div class="download-links">
+        <a href="api/index.html" class="interactive">Interactive Docs</a>
+        <a href="swagger.json" download>Download Swagger JSON</a>
+        <a href="openapi.json" download class="secondary"
+          >Download OpenAPI JSON</a
+        >
+        <a href="postman_collection.json" download class="secondary"
+          >Postman Collection</a
+        >
+      </div>
+    </div>
+
+    <div id="swagger-ui"></div>
+
+    <script
+      src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"
+      charset="UTF-8"
+    ></script>
+    <script
+      src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"
+      charset="UTF-8"
+    ></script>
+
+    <script>
+      const specUrls = {
+        swagger: "swagger.json",
+        "swagger-yaml": "swagger.yml",
+        openapi: "openapi.json",
+        "openapi-yaml": "openapi.yml",
+      };
+
+      let ui;
+
+      function initSwaggerUI(url) {
+        ui = SwaggerUIBundle({
+          url: url + "?rev=" + Math.floor(Math.random() * 10000),
+          dom_id: "#swagger-ui",
+          deepLinking: true,
+          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+          plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+          layout: "StandaloneLayout",
+          validatorUrl: null,
+          onComplete: function () {
+            // Update header with API info
+            const spec = ui.getState().toJSON().spec.json;
+            if (spec) {
+              const title = spec.info?.title || "API Documentation";
+              const description =
+                spec.info?.description || "Interactive API documentation";
+              document.getElementById("api-title").textContent = title;
+              document.getElementById("api-description").textContent =
+                description;
+              document.title = title;
+            }
+          },
+        });
+        window.ui = ui;
+      }
+
+      function changeFormat(format) {
+        const url = specUrls[format] || specUrls["swagger"];
+        initSwaggerUI(url);
+
+        // Save preference
+        localStorage.setItem("preferred-spec-format", format);
+      }
+
+      // Initialize
+      window.onload = function () {
+        // Check for saved preference
+        const savedFormat =
+          localStorage.getItem("preferred-spec-format") || "swagger";
+        document.getElementById("spec-format").value = savedFormat;
+
+        // Check which files exist and update download links accordingly
+        fetch("openapi.json", { method: "HEAD" })
+          .then((response) => {
+            if (!response.ok) {
+              // Hide OpenAPI options if file doesn't exist
+              const select = document.getElementById("spec-format");
+              for (let option of select.options) {
+                if (option.value.startsWith("openapi")) {
+                  option.disabled = true;
+                  option.text += " (not generated)";
+                }
+              }
+            }
+          })
+          .catch(() => {});
+
+        initSwaggerUI(specUrls[savedFormat]);
+      };
+    </script>
+  </body>
+</html>

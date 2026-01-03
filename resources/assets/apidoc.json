@@ -1,0 +1,13 @@
+{
+    "name": "API Documentation",
+    "version": "1.0.0",
+    "description": "Interactive API documentation with sample request builder",
+    "title": "API Documentation",
+    "url": "",
+    "sampleUrl": "",
+    "template": {
+        "withCompare": true,
+        "withGenerator": true,
+        "showRequiredLabels": true
+    }
+}

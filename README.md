@@ -1,0 +1,267 @@
+# Easy-Doc
+
+A lightweight Laravel package for API documentation generation with **fully configurable headers** and **built-in Swagger UI**.
+
+## Features
+
+- **Configurable Headers** - Define any header names (api-key, x-access-token, etc.)
+- **Swagger 2.0** - Generate Swagger 2.0 specification (JSON/YAML)
+- **OpenAPI 3.0** - Generate OpenAPI 3.0 specification (JSON/YAML)
+- **Swagger UI** - Interactive documentation interface out of the box
+- **Postman Collection** - Generate Postman collection with variables
+- **Documentation Viewer** - Browse all generated docs at `/easy-doc`
+- **Lightweight** - Just documentation, no auth/models/CRUD
+
+## Installation
+
+```bash
+composer require easypack/doc
+```
+
+## Quick Start
+
+### 1. Publish Configuration
+
+```bash
+php artisan vendor:publish --tag=easy-doc-config
+```
+
+### 2. Enable the Documentation Viewer
+
+Add to your `.env` file:
+
+```env
+EASY_DOC_VISIBLE=true
+```
+
+### 3. Configure Your Headers
+
+Edit `config/easy-doc.php`:
+
+```php
+'auth_headers' => [
+    [
+        'name' => 'api-key',
+        'type' => 'api_key',
+        'description' => 'Global API Key',
+        'required' => true,
+        'security_scheme' => 'apiKey',
+        'example' => '12345',
+    ],
+    [
+        'name' => 'x-access-token',
+        'type' => 'api_key',
+        'description' => 'Access Token for authenticated routes',
+        'required' => false,
+        'security_scheme' => 'accessToken',
+        'example' => 'mock-token',
+    ],
+],
+```
+
+### 4. Document Your Endpoints
+
+In your controllers, use the `document()` helper:
+
+```php
+use EasyDoc\Docs\APICall;
+use EasyDoc\Docs\Param;
+
+public function register(Request \)
+{
+    document(function () {
+        return (new APICall())
+            ->setName('Register')
+            ->setDescription('Register a new user')
+            ->withConfigHeaders(['api-key'])
+            ->setParams([
+                new Param('name', 'string', 'User name'),
+                new Param('email', 'string', 'User email'),
+                new Param('password', 'string', 'User password'),
+            ]);
+    });
+
+    // Your actual logic...
+}
+
+public function logout(Request \)
+{
+    document(function () {
+        return (new APICall())
+            ->setName('Logout')
+            ->setDescription('Logout and invalidate token')
+            ->withConfigHeaders(['api-key', 'x-access-token'])
+            ->setParams([]);
+    });
+
+    // Your logout logic...
+}
+```
+
+### 5. Generate Documentation
+
+```bash
+php artisan easy-doc:generate
+```
+
+## Viewing Documentation
+
+After generation, access your docs:
+
+| URL | Description |
+|-----|-------------|
+| `/easy-doc` | Documentation viewer dashboard |
+| `/docs/index.html` | Interactive Swagger UI |
+| `/docs/swagger.json` | Swagger 2.0 JSON |
+| `/docs/openapi.json` | OpenAPI 3.0 JSON |
+| `/docs/postman_collection.json` | Postman Collection |
+
+## Generated Files
+
+| File | Description |
+|------|-------------|
+| `public/docs/index.html` | **Interactive Swagger UI** |
+| `public/docs/swagger.json` | Swagger 2.0 specification |
+| `public/docs/swagger.yml` | Swagger 2.0 YAML |
+| `public/docs/openapi.json` | OpenAPI 3.0 specification |
+| `public/docs/openapi.yml` | OpenAPI 3.0 YAML |
+| `public/docs/postman_collection.json` | Postman Collection |
+| `public/docs/api/index.html` | ApiDoc HTML (requires apidoc) |
+
+## Param Class Usage
+
+Create parameters using the constructor:
+
+```php
+// Basic usage: Param(name, type, description)
+new Param('email', 'string', 'User email address')
+
+// Make optional (default is required)
+(new Param('page', 'integer', 'Page number'))->optional()
+
+// Set default value
+(new Param('limit', 'integer', 'Items per page'))->setDefaultValue(10)
+```
+
+**Available Types:**
+- `string` - Text values
+- `integer` - Whole numbers
+- `number` - Decimal numbers
+- `boolean` - True/false
+- `array` - Arrays
+- `file` - File uploads
+
+
+## Response Examples
+
+Document what your API returns so frontend developers know exactly what to expect:
+
+```php
+->setSuccessExample([
+    'access_token' => 'eyJ0eXAiOiJKV1Q...',
+    'token_type' => 'Bearer',
+    'user' => [
+        'id' => 1,
+        'name' => 'John Doe',
+        'email' => 'user@example.com',
+    ],
+], 201, 'User registered successfully')
+
+->setErrorExample([
+    'message' => 'The email has already been taken.',
+    'errors' => [
+        'email' => ['The email has already been taken.'],
+    ],
+], 422, 'Validation error')
+```
+
+**Parameters:**
+- `$example` - The response body (array or object)
+- `$statusCode` - HTTP status code (default: 200 for success, 400 for error)
+- `$description` - Optional description for the response
+
+## Postman Environment
+
+Easy-doc automatically generates a Postman environment file with your configured variables:
+
+**Generated file:** `public/docs/postman_environment.json`
+
+**Includes:**
+- `base_url` - Your API base URL
+- All configured auth headers (e.g., `api_key`, `x_access_token`)
+
+Import both the collection and environment into Postman to start testing immediately!
+## Selective Header Authentication
+
+Use `->withConfigHeaders()` to add headers to specific endpoints:
+
+```php
+// Public endpoint - only api-key
+->withConfigHeaders(['api-key'])
+
+// Protected endpoint - api-key + access token
+->withConfigHeaders(['api-key', 'x-access-token'])
+```
+
+Headers added via `withConfigHeaders()` are marked as **required** in the documentation.
+
+## Command Options
+
+```bash
+# Generate all formats (default)
+php artisan easy-doc:generate
+
+# Generate only Swagger 2.0
+php artisan easy-doc:generate --format=swagger2
+
+# Generate only OpenAPI 3.0
+php artisan easy-doc:generate --format=openapi3
+
+# Reset and regenerate
+php artisan easy-doc:generate --reset
+
+# Skip ApiDoc HTML generation
+php artisan easy-doc:generate --no-apidoc
+```
+
+## Configuration Options
+
+```php
+return [
+    // API Info
+    'api_info' => [
+        'title' => env('APP_NAME', 'API') . ' Documentation',
+        'description' => 'API Documentation',
+        'version' => '1.0.0',
+    ],
+
+    // Base path for API routes
+    'base_path' => '/api/v1',
+
+    // Auth headers (see above)
+    'auth_headers' => [...],
+
+    // Output settings
+    'output' => [
+        'path' => public_path('docs'),
+        'formats' => ['swagger2', 'openapi3', 'postman'],
+    ],
+
+    // Documentation viewer
+    'viewer' => [
+        'enabled' => env('EASY_DOC_VISIBLE', false),
+        'route' => 'easy-doc',
+        'middleware' => ['web'],
+    ],
+];
+```
+
+## Requirements
+
+- PHP 8.2+
+- Laravel 11+
+- (Optional) `apidoc` for HTML docs: `npm install -g apidoc`
+
+## License
+
+MIT License
