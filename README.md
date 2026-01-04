@@ -1,697 +1,148 @@
-# Easy-Doc
+# EasyDoc 📚
 
-A lightweight Laravel package for API documentation generation with **fully configurable headers** and **built-in Swagger UI**.
+A lightweight, developer-friendly API documentation generator for Laravel.
 
-## Features
+**Stop writing YAML manually.** `EasyDoc` auto-generates beautiful Markdown documentation, OpenAPI (Swagger) specs, Postman collections, and even a fully typed TypeScript SDK directly from your Laravel codebase using a fluent, expressive API.
 
-- **Configurable Headers** - Define any header names (api-key, x-access-token, etc.)
-- **Swagger 2.0** - Generate Swagger 2.0 specification (JSON/YAML)
-- **OpenAPI 3.0** - Generate OpenAPI 3.0 specification (JSON/YAML)
-- **Swagger UI** - Interactive documentation interface out of the box
-- **Postman Collection** - Generate Postman collection with variables
-- **Documentation Viewer** - Browse all generated docs at `/easy-doc`
-- **Lightweight** - Just documentation, no auth/models/CRUD
+---
 
-## Installation
+## 🚀 Features
 
-### 1. Require Package
+- **Fluent API**: Define documentation where your code lives (in Controllers or Routes).
+- **Automatic Schema Discovery**: Your Eloquent models are automatically scanned and converted to schemas. No manual definition needed!
+- **Multi-Format Output**: Markdown, OpenAPI 3.0, Swagger 2.0, Postman, TypeScript SDK.
+- **Configurable Headers**: Define global authentication headers once in your config.
+
+---
+
+## 📦 Installation
+
+Install via Composer:
 
 ```bash
 composer require iron-curtain/easy-doc
 ```
 
-### 2. Auto-Install
-
-Run the installer to configure your API name and base URL automatically:
+Publish the configuration (Critical for Header setup):
 
 ```bash
-php artisan easy-doc:install
+php artisan vendor:publish --provider="EasyDoc\EasyDocServiceProvider"
 ```
 
-### 3. Generate Documentation
+---
 
-You can generate documentation immediately with zero configuration:
+## ⚙️ Configuration (Headers & Models)
 
-```bash
-php artisan easy-doc:generate --auto
-```
+### Authentication Headers
 
-That's it! Your documentation is now available at `/easy-doc`.
-
-## Quick Start
-
-### 1. Publish Configuration
-
-```bash
-php artisan vendor:publish --tag=easy-doc-config
-```
-
-### 2. Enable the Documentation Viewer
-
-Add to your `.env` file:
-
-```env
-EASY_DOC_VISIBLE=true
-```
-
-### 3. Configure Your Headers (Optional)
-
-If you want to define reusable authentication headers, edit `config/easy-doc.php`:
+Define your API keys or Tokens in `config/easy-doc.php`. This sets them globally for `authenticated()` endpoints.
 
 ```php
+// config/easy-doc.php
+
 'auth_headers' => [
     [
         'name' => 'x-api-key',
-        'type' => 'api_key',
-        'description' => 'API Key for authentication',
+        'type' => 'api_key', // or 'bearer'
+        'description' => 'Your API Key',
         'required' => true,
-        'security_scheme' => 'apiKey',
-        'example' => '{{x-api-key}}',
+        'example' => 'abcdef123456', // Used in Postman/Curl examples
     ],
 ],
 ```
 
-> **Note:** This step is optional. You can document APIs without configuring global auth headers.
+### Model Auto-Discovery
 
-### 4. Document Your Endpoints
-
-In your controllers, use the `document()` helper:
+By default, `EasyDoc` scans your `app/Models` directory.
+You just need to ensure your models are standard Eloquent models.
 
 ```php
-use EasyDoc\Docs\APICall;
-use EasyDoc\Docs\Param;
+'auto_discover_models' => true,
+'model_path' => app_path('Models'),
+```
 
-public function register(Request $request)
-{
-    document(function () {
-        return (new APICall())
-            ->setName('Register')
-            ->setDescription('Register a new user')
-            ->withConfigHeaders(['api-key'])
-            ->setParams([
-                new Param('name', 'string', 'User name'),
-                new Param('email', 'string', 'User email'),
-                new Param('password', 'string', 'User password'),
-            ]);
+---
+
+## 📖 Usage Guide
+
+Since schemas are auto-discovered, you focus purely on **Documenting Endpoints**.
+
+**Scenario**: A **User** has one **Partner** and many **Places**.
+(Assumes `User`, `Partner`, and `Place` models exist in `App\Models`)
+
+### Document Your Endpoints 📝
+
+Use the `document()` helper in your Controllers.
+
+#### Authentication & Registration
+
+```php
+// AuthController.php
+
+public function register(Request $request) {
+    document(function($doc) {
+        return $doc->name('Register User')
+            ->group('Auth')
+            ->body(['name', 'email', 'password', 'password_confirmation'])
+            ->response(201, 'User created', ['token' => 'abc...']);
     });
-
-    // Your actual logic...
 }
 
-public function logout(Request \)
-{
-    document(function () {
-        return (new APICall())
-            ->setName('Logout')
-            ->setDescription('Logout and invalidate token')
-            ->withConfigHeaders(['api-key', 'x-access-token'])
-            ->setParams([]);
+public function login(Request $request) {
+    document(function($doc) {
+        return $doc->name('Login')
+            ->group('Auth')
+            ->body(['email', 'password'])
+            ->possibleErrors([
+                'INVALID_CREDENTIALS' => 'Wrong email or password',
+            ])
+            ->response(200, 'Login successful', ['token' => 'abc...', 'user' => schema('User')]);
     });
-
-    // Your logout logic...
 }
 ```
 
-### 5. Generate Documentation
+#### Protected Endpoints
+
+Use `->authenticated()` to automatically apply the headers defined in your config.
+
+```php
+// PlaceController.php
+
+public function store(Request $request) {
+    document(function($doc) {
+        return $doc->name('Add New Place')
+            ->group('Places')
+            ->authenticated() // <--- Uses 'x-api-key' from config
+            ->body(['address', 'latitude', 'longitude'])
+            ->response(201, 'Place Added', schema('Place'));
+    });
+}
+```
+
+### Generate Documentation ⚡
+
+Run the artisan command to generate all formats:
 
 ```bash
-php artisan easy-doc:generate
+php artisan easy-doc:generate --markdown --openapi3 --sdk
 ```
 
-## Complete Authentication API Example
+---
 
-Here's a real-world example implementing register, login, logout, and profile endpoints with Laravel Sanctum:
+## 💡 Advanced Usage
+
+### Configurable Responses
+
+Customize generic response wrappers in `config/easy-doc.php` to match your API's style (e.g., using "success" instead of "result").
+
+### Deprecation
+
+Mark fields or endpoints as deprecated.
 
 ```php
-<?php
-
-namespace App\Http\Controllers\Api;
-
-use App\Http\Controllers\Controller;
-use App\Models\User;
-use EasyDoc\Docs\APICall;
-use EasyDoc\Docs\Param;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-
-class AuthController extends Controller
-{
-    public function register(Request $request): JsonResponse
-    {
-        document(function () {
-            return (new APICall())
-                ->setName('Register')
-                ->setGroup('Authentication')
-                ->setDescription('Register a new user account and return an access token.')
-                ->setTags(['Authentication', 'Public'])
-                ->setParams([
-                    (new Param('name', 'string', 'Full name of the user'))->setExample('John Doe'),
-                    (new Param('email', 'string', 'Email address (must be unique)'))->setExample('user@example.com'),
-                    (new Param('password', 'string', 'Password (minimum 8 characters)'))->setExample('SecurePass123!'),
-                    (new Param('password_confirmation', 'string', 'Password confirmation'))->setExample('SecurePass123!'),
-                ])
-                ->setSuccessObject(User::class) // Auto-generates User model schema!
-                ->setSuccessExample([
-                    'success' => true,
-                    'message' => 'User registered successfully',
-                    'data' => [
-                        'access_token' => 'eyJ0eXAiOiJKV1QiLCJhbGci...',
-                        'token_type' => 'Bearer',
-                        'user' => ['id' => 1, 'name' => 'John Doe', 'email' => 'john.doe@example.com'],
-                    ],
-                ], 201, 'User registered successfully')
-                ->setErrorExample([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => ['email' => ['The email has already been taken.']],
-                ], 422, 'Validation error')
-                ->rateLimit(5, 'minute');
-        });
-
-        // Your registration logic...
-    }
-
-    public function login(Request $request): JsonResponse
-    {
-        document(function () {
-            return (new APICall())
-                ->setName('Login')
-                ->setGroup('Authentication')
-                ->setDescription('Authenticate user and return access token.')
-                ->setTags(['Authentication', 'Public'])
-                ->setParams([
-                    (new Param('email', 'string', 'Email address'))->setExample('user@example.com'),
-                    (new Param('password', 'string', 'Password'))->setExample('SecurePass123!'),
-                ])
-                ->setSuccessObject(User::class)
-                ->setErrorExample(['success' => false, 'message' => 'Invalid credentials'], 401)
-                ->rateLimit(10, 'minute');
-        });
-
-        // Your login logic...
-    }
-
-    public function logout(Request $request): JsonResponse
-    {
-        document(function () {
-            return (new APICall())
-                ->setName('Logout')
-                ->setGroup('Authentication')
-                ->setDescription('Revoke the current access token.')
-                ->setTags(['Authentication', 'Protected'])
-                ->addHeader((new Param('Authorization', 'string', 'Bearer token'))->setExample('Bearer eyJ0eXAi...'))
-                ->setParams([])
-                ->setSuccessMessageOnly() // Simple {success: true, message: "..."} response
-                ->setSuccessExample(['success' => true, 'message' => 'Logged out successfully'], 200);
-        });
-
-        // Your logout logic...
-    }
-
-    public function profile(Request $request): JsonResponse
-    {
-        document(function () {
-            return (new APICall())
-                ->setName('Get Profile')
-                ->setGroup('Authentication')
-                ->setDescription('Get the authenticated user profile.')
-                ->setTags(['Authentication', 'Protected'])
-                ->addHeader((new Param('Authorization', 'string', 'Bearer token'))->setExample('Bearer eyJ0eXAi...'))
-                ->setParams([])
-                ->setSuccessObject(User::class); // Returns User model schema
-        });
-
-        // Your profile logic...
-    }
-}
+$doc->name('Old Endpoint')->deprecated('Use /new-endpoint instead');
 ```
-
-**Key Features Used:**
-
-| Method                          | Purpose                                          |
-| ------------------------------- | ------------------------------------------------ |
-| `setSuccessObject(User::class)` | Auto-generates model schema from Eloquent model  |
-| `setSuccessMessageOnly()`       | Simple `{success, message}` response             |
-| `setSuccessExample()`           | Document exact response structure                |
-| `setErrorExample()`             | Document error responses                         |
-| `addHeader()`                   | Add Authorization header for protected endpoints |
-| `rateLimit()`                   | Document rate limiting                           |
-
-## Viewing Documentation
-
-After generation, access your docs:
-
-| URL                             | Description                    |
-| ------------------------------- | ------------------------------ |
-| `/easy-doc`                     | Documentation viewer dashboard |
-| `/docs/index.html`              | Interactive Swagger UI         |
-| `/docs/swagger.json`            | Swagger 2.0 JSON               |
-| `/docs/openapi.json`            | OpenAPI 3.0 JSON               |
-| `/docs/postman_collection.json` | Postman Collection             |
-
-## Generated Files
-
-| File                                  | Description                   |
-| ------------------------------------- | ----------------------------- |
-| `public/docs/index.html`              | **Interactive Swagger UI**    |
-| `public/docs/swagger.json`            | Swagger 2.0 specification     |
-| `public/docs/swagger.yml`             | Swagger 2.0 YAML              |
-| `public/docs/openapi.json`            | OpenAPI 3.0 specification     |
-| `public/docs/openapi.yml`             | OpenAPI 3.0 YAML              |
-| `public/docs/postman_collection.json` | Postman Collection            |
-| `public/docs/api/index.html`          | ApiDoc HTML (requires apidoc) |
-
-## Param Class Usage
-
-Create parameters using the constructor:
-
-```php
-// Basic usage: Param(name, type, description)
-new Param('email', 'string', 'User email address')
-
-// Make optional (default is required)
-(new Param('page', 'integer', 'Page number'))->optional()
-
-// Set default value
-(new Param('limit', 'integer', 'Items per page'))->setDefaultValue(10)
-```
-
-**Available Types:**
-
-- `string` - Text values
-- `integer` - Whole numbers
-- `number` - Decimal numbers
-- `boolean` - True/false
-- `array` - Arrays
-- `file` - File uploads
-
-## 🪄 Magic Methods (Auto-Schema)
-
-Forget defining schemas manually! Just pass your Eloquent model:
-
-```php
-// 1. Single Object Response
-->setSuccessObject(User::class)
-// Auto-generates User schema and returns { success: true, data: {...} }
-
-// 2. List Response
-->setSuccessList(User::class)
-// Auto-generates User schema and returns { success: true, data: [{...}, {...}] }
-
-// 3. Paginated Response
-->setSuccessPaginated(User::class)
-// Auto-generates User schema and returns { success: true, data: [...], meta: {...}, links: {...} }
-```
-
-## 🔧 Extra API Columns
-
-Need to add extra columns to your model schema that aren't in the database? Use the `addExtraAPIColumns()` method in your model:
-
-```php
-use App\Models\Place;
-
-class User extends Authenticatable
-{
-    // ... existing model code ...
-
-    /**
-     * Define extra API columns for Swagger documentation.
-     */
-    public function addExtraAPIColumns(): array
-    {
-        return [
-            // Simple string field with example
-            'access_token' => type('string')
-                ->description('JWT access token for API authentication')
-                ->example('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'),
-
-            // String with fixed example
-            'token_type' => type('string')
-                ->description('Token type (always Bearer)')
-                ->example('Bearer'),
-
-            // Array of related model objects
-            'places' => type('array')
-                ->of(Place::class)
-                ->description('List of places owned by this user'),
-
-            // Single related object
-            'profile' => type('object')
-                ->model(Profile::class)
-                ->nullable(),
-        ];
-    }
-}
-```
-
-**Features:**
-
-| Method                  | Description                              |
-| ----------------------- | ---------------------------------------- |
-| `type('string')`        | Create a string field                    |
-| `type('integer')`       | Create an integer field                  |
-| `type('boolean')`       | Create a boolean field                   |
-| `->description()`       | Add field description                    |
-| `->example()`           | Set example value                        |
-| `->model(Model::class)` | Reference another model (single object)  |
-| `->of(Model::class)`    | Array of model objects                   |
-| `->nullable()`          | Mark as nullable                         |
-| `->format('email')`     | Set format (email, date-time, uri, etc.) |
-
-> **Note:** Related models are automatically registered as separate schemas!
-
-## 🤖 Smart Automation
-
-Easy-Doc works hard so you don't have to. If you use **FormRequest** validation and standard naming conventions, you can skip almost everything!
-
-### 1. Auto-FormRequest Parsing
-
-If your controller method uses a `FormRequest`, we automatically extract validation rules and document them as parameters.
-
-**Code:**
-
-```php
-// In StoreUserRequest
-public function rules() {
-    return [
-        'email' => 'required|email|unique:users',
-        'age' => 'integer|min:18',
-        'role' => 'in:admin,user',
-    ];
-}
-
-// In UserController
-public function store(StoreUserRequest $request)
-{
-    // Minimal doc definition
-    document(fn() => (new APICall())->setSuccessObject(User::class));
-}
-```
-
-**Result:**
-
-- **Params:** `email` (required), `age` (min: 18), `role` (enum: admin, user)
-- **Response:** User object
-- **Name:** "Create a User" (Auto-inferred from method name)
-- **Group:** "User" (Auto-inferred from controller name)
-
-## Parameter Validation
-
-Add validation constraints to your parameters:
-
-```php
-// Enum values (shows as dropdown in Swagger UI)
-(new Param('status', 'string', 'User status'))
-    ->enum(['active', 'inactive', 'pending'])
-
-// Min/max constraints
-(new Param('age', 'integer', 'User age'))
-    ->min(18)
-    ->max(120)
-
-// Regex pattern
-(new Param('phone', 'string', 'Phone number'))
-    ->pattern('^\+[0-9]{10,15}$')
-```
-
-## Query Parameters
-
-Separate query parameters from body parameters:
-
-```php
-->setQueryParams([
-    (new Param('page', 'integer', 'Page number'))->optional()->defaultValue(1),
-    (new Param('per_page', 'integer', 'Items per page'))->optional()->defaultValue(15),
-    (new Param('sort', 'string', 'Sort order'))->enum(['asc', 'desc'])->optional(),
-])
-```
-
-## Tags & Categories
-
-Group your endpoints with tags:
-
-```php
-->setTags(['Authentication', 'Public API'])
-```
-
-## Deprecation
-
-Mark endpoints as deprecated:
-
-```php
-->deprecated('Use /api/v2/users instead')
-```
-
-Deprecated endpoints show with strikethrough in Swagger UI.
-
-## Rate Limiting
-
-Document rate limits for your endpoints:
-
-```php
-->rateLimit(60, 'minute')  // 60 requests per minute
-->rateLimit(1000, 'hour')  // 1000 requests per hour
-```
-
-## Path Parameters
-
-Auto-detect path parameters from your route:
-
-```php
-// Route: /api/v1/users/{id}
-->autoDetectPathParams()  // Automatically documents {id} parameter
-
-// Or add manually
-->addPathParam(new Param('id', 'integer', 'User ID'))
-```
-
-## Reusable Schemas
-
-Define schemas once, use them everywhere:
-
-```php
-use EasyDoc\Docs\SchemaBuilder;
-
-// Define in a service provider or config
-SchemaBuilder::define('User', [
-    'id' => 'integer',
-    'name' => 'string',
-    'email' => 'string',
-    'created_at' => 'string',
-]);
-
-// Use predefined helpers
-SchemaBuilder::defineErrorResponse();
-SchemaBuilder::defineSuccessResponse();
-
-// Reference in your endpoints
-->setSuccessSchema('User')
-```
-
-## Response Examples
-
-Document what your API returns so frontend developers know exactly what to expect:
-
-```php
-->setSuccessExample([
-    'access_token' => 'eyJ0eXAiOiJKV1Q...',
-    'token_type' => 'Bearer',
-    'user' => [
-        'id' => 1,
-        'name' => 'John Doe',
-        'email' => 'user@example.com',
-    ],
-], 201, 'User registered successfully')
-
-->setErrorExample([
-    'message' => 'The email has already been taken.',
-    'errors' => [
-        'email' => ['The email has already been taken.'],
-    ],
-], 422, 'Validation error')
-```
-
-**Parameters:**
-
-- `$example` - The response body (array or object)
-- `$statusCode` - HTTP status code (default: 200 for success, 400 for error)
-- `$description` - Optional description for the response
-
-## Postman Environment
-
-Easy-doc automatically generates a Postman environment file with your configured variables:
-
-**Generated file:** `public/docs/postman_environment.json`
-
-**Includes:**
-
-- `base_url` - Your API base URL
-- All configured auth headers (e.g., `api_key`, `x_access_token`)
-
-Import both the collection and environment into Postman to start testing immediately!
-
-## Selective Header Authentication
-
-Use `->withConfigHeaders()` to add headers to specific endpoints:
-
-```php
-// Public endpoint - only api-key
-->withConfigHeaders(['api-key'])
-
-// Protected endpoint - api-key + access token
-->withConfigHeaders(['api-key', 'x-access-token'])
-```
-
-Headers added via `withConfigHeaders()` are marked as **required** in the documentation.
-
-## Command Options
-
-```bash
-# Generate all formats (default)
-php artisan easy-doc:generate
-
-# Generate only Swagger 2.0
-php artisan easy-doc:generate --format=swagger2
-
-# Generate only OpenAPI 3.0
-php artisan easy-doc:generate --format=openapi3
-
-# Reset and regenerate
-php artisan easy-doc:generate --reset
-
-# Skip ApiDoc HTML generation
-php artisan easy-doc:generate --no-apidoc
-```
-
-## Configuration Options
-
-```php
-return [
-    // API Info
-    'api_info' => [
-        'title' => env('APP_NAME', 'API') . ' Documentation',
-        'description' => 'API Documentation',
-        'version' => '1.0.0',
-    ],
-
-    // Base path for API routes
-    'base_path' => '/api/v1',
-
-    // Auth headers (see above)
-    'auth_headers' => [...],
-
-    // Output settings
-    'output' => [
-        'path' => public_path('docs'),
-        'formats' => ['swagger2', 'openapi3', 'postman'],
-    ],
-
-    // Documentation viewer
-    'viewer' => [
-        'enabled' => env('EASY_DOC_VISIBLE', false),
-        'route' => 'easy-doc',
-        'middleware' => ['web'],
-    ],
-];
-```
-
-## 🔮 "Alive" Documentation
-
-### Smart Examples (Faker)
-
-When you use `SchemaBuilder::fromModel(User::class)`, we automatically inspect your database schema and generate **realistic example data** for your documentation using standard Faker formatters.
-
-- `email` field -> Generates "jane.doe@example.com"
-- `phone` field -> Generates "+1-202-555-0109"
-
-### Global Response Wrappers
-
-Most APIs wrap their responses (e.g., `{ "success": true, "data": ... }`).
-Configure it once in `config/easy-doc.php`:
-
-```php
-'response_wrapper' => [
-    'success' => true,
-    'code' => 200,
-    'result' => '__DATA__', // Values are injected here
-],
-```
-
-Now, `setSuccessObject(User::class)` will implicitly use this wrapper structure.
-
-### Bridge to Frontend (TypeScript)
-
-Automatically generate TypeScript interfaces for your API responses.
-
-1. Run `php artisan easy-doc:generate`
-2. Check `public/docs/types.ts`
-3. Import them in your frontend: `import { UserResponse } from './types';`
-
-### Model Auto-Discovery 🕵️‍♂️
-
-EasyDoc automatically finds all your Eloquent models in `app/Models` and registers them for documentation.
-
-- No need to manually call `SchemaBuilder::fromModel()`.
-- Disabling this: Set `'auto_discover_models' => false` in `config/easy-doc.php`.
-
-## 🔌 Extra API Columns
-
-Add virtual fields to your model's Swagger schema that aren't in the database:
-
-```php
-use EasyDoc\Contracts\HasExtraApiColumns;
-
-class User extends Model implements HasExtraApiColumns
-{
-    public function addExtraAPIColumns(): array
-    {
-        return [
-            'access_token' => type('string')
-                ->description('JWT access token')
-                ->example('eyJ0eXAi...')
-                ->nullable(),
-
-            'status' => type('string')
-                ->enum(['active', 'inactive', 'pending'])
-                ->default('active'),
-
-            'places' => type('array')
-                ->of(Place::class)
-                ->description('User places'),
-        ];
-    }
-}
-```
-
-### type() Helper Reference
-
-| Method                            | Description                      |
-| --------------------------------- | -------------------------------- |
-| `type('string')`                  | Basic string field               |
-| `type('email')`                   | String with email format         |
-| `type('url')`                     | String with URI format           |
-| `type('uuid')`                    | String with UUID format          |
-| `type('datetime')`                | String with date-time format     |
-| `->description()`                 | Add field description            |
-| `->example()`                     | Set example value                |
-| `->nullable()`                    | Mark as nullable                 |
-| `->required()`                    | Mark as required                 |
-| `->enum([...])`                   | Set allowed values               |
-| `->default()`                     | Set default value                |
-| `->model(Model::class)`           | Reference another model (single) |
-| `->of(Model::class)`              | Array of model objects           |
-| `->min()` / `->max()`             | Number constraints               |
-| `->minLength()` / `->maxLength()` | String length constraints        |
-
-## Requirements
-
-- PHP 8.2+
-- Laravel 11+
-- (Optional) `apidoc` for HTML docs: `npm install -g apidoc`
 
 ## License
 
-MIT License
+The MIT License (MIT).
