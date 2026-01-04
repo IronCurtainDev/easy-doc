@@ -67,12 +67,16 @@ class EasyDocServiceProvider extends ServiceProvider
         }
 
         $routePath = config('easy-doc.viewer.route', 'easy-doc');
+        $publicPath = config('easy-doc.viewer.public_route', 'docs/public'); // Default public route
         $middleware = config('easy-doc.viewer.middleware', ['web']);
 
         Route::middleware($middleware)
-            ->group(function () use ($routePath) {
+            ->group(function () use ($routePath, $publicPath) {
                 Route::get($routePath, [DocumentationController::class, 'index'])
                     ->name('easy-doc.viewer');
+
+                Route::get($publicPath, [DocumentationController::class, 'redoc'])
+                    ->name('easy-doc.public');
             });
     }
 

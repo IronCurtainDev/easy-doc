@@ -178,6 +178,8 @@ return [
         // Enable/disable the documentation viewer route
         // Set EASY_DOC_VISIBLE=true in your .env to enable
         'enabled' => env('EASY_DOC_VISIBLE', false),
+        'route' => 'easy-doc', // The dashboard
+        'public_route' => 'docs/public', // The beautiful Redoc page
 
         // Route path for the documentation viewer
         'route' => 'easy-doc',
