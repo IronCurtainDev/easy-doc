@@ -114,9 +114,17 @@ class TypeScriptSDKGenerator
             $type = $this->schemaToTypeScript($propDef);
             $optional = !in_array($propName, $required) ? '?' : '';
             $description = $propDef['description'] ?? null;
+            $isDeprecated = $propDef['deprecated'] ?? false;
 
-            if ($description) {
-                $ts .= "  /** {$description} */\n";
+            if ($description || $isDeprecated) {
+                $ts .= "  /**\n";
+                if ($description) {
+                    $ts .= "   * {$description}\n";
+                }
+                if ($isDeprecated) {
+                    $ts .= "   * @deprecated\n";
+                }
+                $ts .= "   */\n";
             }
             $ts .= "  {$propName}{$optional}: {$type};\n";
         }
@@ -131,21 +139,30 @@ class TypeScriptSDKGenerator
      */
     protected function generateApiResponseTypes(): string
     {
+        $keys = config('easy-doc.response.keys', [
+            'result' => 'result',
+            'message' => 'message',
+            'data' => 'payload',
+            'errors' => 'errors',
+            'meta' => 'meta',
+            'links' => 'links'
+        ]);
+
         $ts = "// API Response wrapper\n";
         $ts .= "export interface ApiResponse<T> {\n";
-        $ts .= "  success: boolean;\n";
-        $ts .= "  message?: string;\n";
-        $ts .= "  data: T;\n";
+        $ts .= "  {$keys['result']}: boolean;\n";
+        $ts .= "  {$keys['message']}?: string;\n";
+        $ts .= "  {$keys['data']}: T;\n";
         $ts .= "}\n\n";
 
         $ts .= "export interface ApiError {\n";
-        $ts .= "  success: false;\n";
-        $ts .= "  message: string;\n";
-        $ts .= "  errors?: Record<string, string[]>;\n";
+        $ts .= "  {$keys['result']}: false;\n";
+        $ts .= "  {$keys['message']}: string;\n";
+        $ts .= "  {$keys['errors']}?: Record<string, string[]>;\n";
         $ts .= "}\n\n";
 
         $ts .= "export interface PaginatedResponse<T> extends ApiResponse<T[]> {\n";
-        $ts .= "  meta: {\n";
+        $ts .= "  {$keys['meta']}: {\n";
         $ts .= "    current_page: number;\n";
         $ts .= "    from: number;\n";
         $ts .= "    last_page: number;\n";
@@ -153,7 +170,7 @@ class TypeScriptSDKGenerator
         $ts .= "    to: number;\n";
         $ts .= "    total: number;\n";
         $ts .= "  };\n";
-        $ts .= "  links: {\n";
+        $ts .= "  {$keys['links']}: {\n";
         $ts .= "    first: string;\n";
         $ts .= "    last: string;\n";
         $ts .= "    prev: string | null;\n";

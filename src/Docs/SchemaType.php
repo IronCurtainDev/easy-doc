@@ -22,6 +22,7 @@ namespace EasyDoc\Docs;
 class SchemaType
 {
     protected string $type = 'string';
+    protected bool $deprecated = false;
     protected ?string $description = null;
     protected mixed $example = null;
     protected ?string $modelClass = null;
@@ -142,6 +143,15 @@ class SchemaType
     public function format(string $format): static
     {
         $this->format = $format;
+        return $this;
+    }
+
+    /**
+     * Mark this column as deprecated.
+     */
+    public function deprecated(): static
+    {
+        $this->deprecated = true;
         return $this;
     }
 
@@ -365,6 +375,10 @@ class SchemaType
 
         if ($this->pattern !== null) {
             $schema['pattern'] = $this->pattern;
+        }
+
+        if ($this->deprecated) {
+            $schema['deprecated'] = true;
         }
 
         return $schema;

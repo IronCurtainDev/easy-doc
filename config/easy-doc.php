@@ -144,6 +144,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Response Structure Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure the keys used in standardized API responses.
+    |
+    */
+    'response' => [
+        'keys' => [
+            'result' => 'result',   // Boolean status
+            'message' => 'message', // Standard message
+            'data' => 'payload',    // Main data/payload
+            'errors' => 'errors',   // Validation errors
+            'meta' => 'meta',       // Pagination meta
+            'links' => 'links',     // Pagination links
+            'code' => 'code',       // Error code (optional)
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Documentation Viewer
     |--------------------------------------------------------------------------
     |

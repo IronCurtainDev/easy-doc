@@ -85,24 +85,58 @@ class EasyDocServiceProvider extends ServiceProvider
          * Return a successful API response.
          */
         Response::macro('apiSuccess', function ($data = null, string $message = '', int $statusCode = 200) {
+            $keys = config('easy-doc.response.keys', [
+                'result' => 'result',
+                'message' => 'message',
+                'data' => 'payload'
+            ]);
+
             return response()->json([
-                'result' => true,
-                'message' => $message,
-                'payload' => $data,
+                $keys['result'] => true,
+                $keys['message'] => $message,
+                $keys['data'] => $data,
+            ], $statusCode);
+        });
+
+        /**
+         * Return a successful list API response.
+         */
+        Response::macro('apiSuccessList', function ($data = [], string $message = '', int $statusCode = 200) {
+            $keys = config('easy-doc.response.keys', [
+                'result' => 'result',
+                'message' => 'message',
+                'data' => 'payload'
+            ]);
+
+            return response()->json([
+                $keys['result'] => true,
+                $keys['message'] => $message,
+                $keys['data'] => $data,
             ], $statusCode);
         });
 
         /**
          * Return an error API response.
          */
-        Response::macro('apiError', function (string $message = 'An error occurred', int $statusCode = 400, $data = null) {
+        Response::macro('apiError', function (string $message = 'An error occurred', int $statusCode = 400, $data = null, string $code = null) {
+            $keys = config('easy-doc.response.keys', [
+                'result' => 'result',
+                'message' => 'message',
+                'data' => 'payload',
+                'code' => 'code'
+            ]);
+
             $response = [
-                'result' => false,
-                'message' => $message,
+                $keys['result'] => false,
+                $keys['message'] => $message,
             ];
 
             if ($data !== null) {
-                $response['payload'] = $data;
+                $response[$keys['data']] = $data;
+            }
+
+            if ($code !== null && isset($keys['code'])) {
+                $response[$keys['code']] = $code;
             }
 
             return response()->json($response, $statusCode);
@@ -112,11 +146,19 @@ class EasyDocServiceProvider extends ServiceProvider
          * Return a paginated API response.
          */
         Response::macro('apiSuccessPaginated', function ($paginator, string $message = '') {
+            $keys = config('easy-doc.response.keys', [
+                'result' => 'result',
+                'message' => 'message',
+                'data' => 'payload',
+                'meta' => 'meta',
+                'links' => 'links'
+            ]);
+
             return response()->json([
-                'result' => true,
-                'message' => $message,
-                'payload' => $paginator->items(),
-                'meta' => [
+                $keys['result'] => true,
+                $keys['message'] => $message,
+                $keys['data'] => $paginator->items(),
+                $keys['meta'] => [
                     'current_page' => $paginator->currentPage(),
                     'from' => $paginator->firstItem(),
                     'last_page' => $paginator->lastPage(),
@@ -124,7 +166,7 @@ class EasyDocServiceProvider extends ServiceProvider
                     'to' => $paginator->lastItem(),
                     'total' => $paginator->total(),
                 ],
-                'links' => [
+                $keys['links'] => [
                     'first' => $paginator->url(1),
                     'last' => $paginator->url($paginator->lastPage()),
                     'prev' => $paginator->previousPageUrl(),
@@ -137,9 +179,11 @@ class EasyDocServiceProvider extends ServiceProvider
          * Return a not found API response.
          */
         Response::macro('apiNotFound', function (string $message = 'Resource not found') {
+            $keys = config('easy-doc.response.keys', ['result' => 'result', 'message' => 'message']);
+
             return response()->json([
-                'result' => false,
-                'message' => $message,
+                $keys['result'] => false,
+                $keys['message'] => $message,
             ], 404);
         });
 
@@ -147,9 +191,11 @@ class EasyDocServiceProvider extends ServiceProvider
          * Return an unauthorized API response.
          */
         Response::macro('apiUnauthorized', function (string $message = 'Unauthorized') {
+            $keys = config('easy-doc.response.keys', ['result' => 'result', 'message' => 'message']);
+
             return response()->json([
-                'result' => false,
-                'message' => $message,
+                $keys['result'] => false,
+                $keys['message'] => $message,
             ], 401);
         });
 
@@ -157,14 +203,20 @@ class EasyDocServiceProvider extends ServiceProvider
          * Return a validation error API response.
          */
         Response::macro('apiValidationError', function ($errors, string $message = 'Validation failed') {
+            $keys = config('easy-doc.response.keys', [
+                'result' => 'result',
+                'message' => 'message',
+                'errors' => 'errors'
+            ]);
+
             if ($errors instanceof \Illuminate\Support\MessageBag) {
                 $errors = $errors->toArray();
             }
 
             return response()->json([
-                'result' => false,
-                'message' => $message,
-                'errors' => $errors,
+                $keys['result'] => false,
+                $keys['message'] => $message,
+                $keys['errors'] => $errors,
             ], 422);
         });
     }

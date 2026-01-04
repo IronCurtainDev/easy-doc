@@ -487,6 +487,15 @@ class GenerateDocsCommand extends Command
                 $description = "**DEPRECATED:** {$item->getDeprecationMessage()}\n\n" . $description;
             }
 
+            // Possible Errors
+            $possibleErrors = $item->getPossibleErrors();
+            if (!empty($possibleErrors)) {
+                $description .= "\n\n**Possible Errors:**\n";
+                foreach ($possibleErrors as $code => $desc) {
+                    $description .= "- `{$code}`: {$desc}\n";
+                }
+            }
+
             $pathData = [
                 'tags' => $item->getTags(),
                 'summary' => $item->getName(),
@@ -558,6 +567,15 @@ class GenerateDocsCommand extends Command
             }
             if ($item->isDeprecated()) {
                 $description = "**DEPRECATED:** {$item->getDeprecationMessage()}\n\n" . $description;
+            }
+
+            // Possible Errors
+            $possibleErrors = $item->getPossibleErrors();
+            if (!empty($possibleErrors)) {
+                $description .= "\n\n**Possible Errors:**\n";
+                foreach ($possibleErrors as $code => $desc) {
+                    $description .= "- `{$code}`: {$desc}\n";
+                }
             }
 
             $pathData = [

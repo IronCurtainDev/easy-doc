@@ -208,6 +208,18 @@ class MarkdownGenerator
             }
         }
 
+        // Possible Errors
+        $possibleErrors = $endpoint->getPossibleErrors();
+        if (!empty($possibleErrors)) {
+            $md .= "**Possible Errors:**\n\n";
+            $md .= "| Code | Description |\n";
+            $md .= "|------|-------------|\n";
+            foreach ($possibleErrors as $code => $description) {
+                $md .= "| `{$code}` | {$description} |\n";
+            }
+            $md .= "\n";
+        }
+
         // Code Examples
         if ($this->includeCurl || $this->includeFetch) {
             $md .= "**Code Examples:**\n\n";

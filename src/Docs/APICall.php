@@ -38,6 +38,7 @@ class APICall
     protected ?array $rateLimit = null;
     protected ?string $successSchema = null;
     protected ?string $errorSchema = null;
+    protected array $possibleErrors = [];
 
     public function getRoute(): ?string
     {
@@ -98,6 +99,17 @@ class APICall
     {
         $this->method = strtoupper($method);
         return $this;
+    }
+
+    public function possibleErrors(array $errors): static
+    {
+        $this->possibleErrors = $errors;
+        return $this;
+    }
+
+    public function getPossibleErrors(): array
+    {
+        return $this->possibleErrors;
     }
 
     public function getDescription(): ?string
