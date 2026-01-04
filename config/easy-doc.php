@@ -102,7 +102,10 @@ return [
     |
     */
     'auto_discover_models' => true,
-    'model_path' => app_path('Models'),
+    'model_path' => [
+        app_path('Models'),
+        // app_path('Domain/User/Models'),
+    ],
 
     /*
     |--------------------------------------------------------------------------

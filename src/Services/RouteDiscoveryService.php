@@ -50,9 +50,19 @@ class RouteDiscoveryService
             return;
         }
 
-        $modelPath = config('easy-doc.model_path', app_path('Models'));
+        $modelPaths = config('easy-doc.model_path', app_path('Models'));
 
-        if (!File::isDirectory($modelPath)) {
+        // Normalize to array
+        if (is_string($modelPaths)) {
+            $modelPaths = [$modelPaths];
+        }
+
+        // Filter valid directories
+        $validPaths = array_filter($modelPaths, function ($path) {
+            return File::isDirectory($path);
+        });
+
+        if (empty($validPaths)) {
             return;
         }
 
@@ -62,7 +72,7 @@ class RouteDiscoveryService
         }
 
         $files = Finder::create()
-            ->in($modelPath)
+            ->in($validPaths)
             ->files()
             ->name('*.php');
 
