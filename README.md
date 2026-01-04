@@ -1,7 +1,6 @@
 # EasyDoc 📚
 
-[![Packagist Version](https://img.shields.io/packagist/v/ironcurtaindev/easy-doc)](https://packagist.org/packages/ironcurtaindev/easy-doc)
-[![Total Downloads](https://img.shields.io/packagist/dt/ironcurtaindev/easy-doc)](https://packagist.org/packages/ironcurtaindev/easy-doc)
+[![Packagist Version](https://img.shields.io/packagist/v/ironcurtaindev/easy-doc)](https://packagist.org/packages/ironcurtaindev/easy-doc) [![Total Downloads](https://img.shields.io/packagist/dt/ironcurtaindev/easy-doc)](https://packagist.org/packages/ironcurtaindev/easy-doc)
 
 A lightweight, developer-friendly API documentation generator for Laravel.
 
@@ -54,7 +53,7 @@ Install via Composer:
 ### Stable Version (Recommended)
 
 ```bash
-composer require ironcurtaindev/easy-doc:^0.1
+composer require ironcurtaindev/easy-doc:^0.2
 ```
 
 ### Development Version (Bleeding Edge)

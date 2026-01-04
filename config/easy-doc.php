@@ -14,7 +14,7 @@ return [
     'api_info' => [
         'title' => env('APP_NAME', 'API') . ' Documentation',
         'description' => 'API Documentation',
-        'version' => '1.0.0',
+        'version' => '0.2.0',
     ],
 
     // Base path for API routes (Optional)

@@ -16,7 +16,7 @@ class APICall
     protected ?string $group = null;
     protected ?string $name = null;
     protected ?string $description = null;
-    protected string $version = '1.0.0';
+    protected string $version = '0.2.0';
     protected array $params = [];
     protected array $headers = [];
     protected array $successParams = [];
