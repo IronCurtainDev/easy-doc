@@ -10,8 +10,37 @@ A lightweight, developer-friendly API documentation generator for Laravel.
 
 - **Fluent API**: Define documentation directly in your Controller logic.
 - **Automatic Schema Discovery**: Eloquent models are automatically scanned.
+- **Mobile Ready**: Generated **OpenAPI 3.0** & **Swagger 2.0** specs are perfect for generating **iOS (Swift)** and **Android (Kotlin)** clients via generic code generators.
 - **Multi-Format Output**: Markdown, OpenAPI 3.0, Swagger 2.0, Postman, TypeScript SDK.
-- **Flexible Headers**: Define headers globally in config OR locally in your document call.
+- **Configurable Headers**: Define global authentication headers once in your config.
+
+---
+
+## 🎯 Why Easy-Doc?
+
+### 🏢 For Teams: The "Bus Factor" Solution
+
+If your backend developer leaves, does the next person know how the API works?
+With `Easy-Doc`, documentation lives **inside the code**.
+
+- **Knowledge Transfer**: The docs are right next to the logic.
+- **Self-Explaining Code**: The Fluent API (`->name('Login')`) makes intent clear.
+
+### � Real-World Resilience
+
+Projects get paused. Clients change requirements. Developers changes.
+
+- **Project Restarts**: Paused for 6 months? Since docs are code, they don't "rot". You pick up exactly where you left off.
+- **Change Requests**: When a client changes a requirement, you change the code AND the doc in the same file. No desync. No "I forgot to update the wiki".
+
+### �👨‍💻 For Solo Devs: Your "External Brain"
+
+Working alone? `Easy-Doc` acts as your memory.
+
+- **Completeness Check**: By explicitly defining endpoints, you instantly spot missing descriptions or edge cases.
+- **Future-Proofing**: Come back to your project 6 months later and know _exactly_ what every endpoint does without re-reading the execution logic.
+
+**It bridges the gap between "Code" and "Explanation".**
 
 ---
 
