@@ -26,11 +26,22 @@ class InstallCommand extends Command
             $this->comment('Configuration already exists. Skipping publish.');
         }
 
-        // 2. Ask for simple configuration
+        // 2. Publish IDE helper for better autocomplete
+        if (!File::exists(base_path('_ide_helpers_easy_doc.php'))) {
+            $this->call('vendor:publish', [
+                '--provider' => "EasyDoc\EasyDocServiceProvider",
+                '--tag' => "easy-doc-ide-helper"
+            ]);
+            $this->info('IDE helper published for better autocomplete support.');
+        } else {
+            $this->comment('IDE helper already exists. Skipping.');
+        }
+
+        // 3. Ask for simple configuration
         $title = $this->ask('What is the name of your API?', 'My API');
         $basePath = $this->ask('What is the base path for your API routes?', '/api/v1');
 
-        // 3. Update config file
+        // 4. Update config file
         $this->updateConfigFile($title, $basePath);
 
         $this->info('EasyDoc installed successfully! 🚀');

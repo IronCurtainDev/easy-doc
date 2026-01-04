@@ -263,6 +263,7 @@ class DocumentationController extends Controller
 
         $openApiJsonUrl = asset('docs/openapi.json');
         $appName = config('app.name', 'API');
+        $primaryColor = '#4f46e5'; // Indigo-600
 
         return '<!DOCTYPE html>
 <html>
@@ -270,11 +271,82 @@ class DocumentationController extends Controller
     <title>' . $appName . ' - API Documentation</title>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
-    <style>body { margin: 0; padding: 0; }</style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; font-family: "Inter", sans-serif; background: #f9fafb; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+    </style>
   </head>
   <body>
-    <redoc spec-url="' . $openApiJsonUrl . '"></redoc>
+    <redoc spec-url="' . $openApiJsonUrl . '"
+        theme=\'{
+            "colors": {
+                "primary": {
+                    "main": "' . $primaryColor . '"
+                },
+                "success": {
+                    "main": "#10b981"
+                },
+                "warning": {
+                    "main": "#f59e0b"
+                },
+                "error": {
+                    "main": "#ef4444"
+                },
+                "text": {
+                    "primary": "#1e293b",
+                    "secondary": "#64748b"
+                },
+                "http": {
+                    "get": "#3b82f6",
+                    "post": "#10b981",
+                    "put": "#f59e0b",
+                    "delete": "#ef4444"
+                }
+            },
+            "typography": {
+                "fontFamily": "Inter, sans-serif",
+                "fontSize": "14px",
+                "lineHeight": "1.5",
+                "headings": {
+                    "fontFamily": "Inter, sans-serif",
+                    "fontWeight": "700",
+                    "lineHeight": "1.2"
+                },
+                "code": {
+                    "fontFamily": "Fira Code, monospace",
+                    "fontSize": "13px"
+                }
+            },
+            "sidebar": {
+                "backgroundColor": "#ffffff",
+                "textColor": "#1e293b",
+                "width": "300px",
+                "groupItems": {
+                    "textTransform": "uppercase"
+                }
+            },
+            "rightPanel": {
+                "backgroundColor": "#0f172a",
+                "width": "40%"
+            }
+        }\'
+        options=\'{
+            "hideDownloadButton": true,
+            "disableSearch": false,
+            "scrollYOffset": 50,
+            "expandResponses": "200,201",
+            "requiredPropsFirst": true,
+            "hideHostname": false,
+            "pathInMiddlePanel": true
+        }\'
+    ></redoc>
     <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"> </script>
   </body>
 </html>';

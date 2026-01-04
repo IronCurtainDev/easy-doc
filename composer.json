@@ -3,7 +3,14 @@
     "description": "A lightweight Laravel package for API documentation generation with configurable headers",
     "type": "library",
     "license": "MIT",
-    "keywords": ["laravel", "api", "documentation", "swagger", "openapi", "postman"],
+    "keywords": [
+        "laravel",
+        "api",
+        "documentation",
+        "swagger",
+        "openapi",
+        "postman"
+    ],
     "authors": [
         {
             "name": "Easy Pack",
@@ -22,7 +29,8 @@
             "EasyDoc\\": "src/"
         },
         "files": [
-            "src/helpers.php"
+            "src/helpers.php",
+            "src/_ide_helpers.php"
         ]
     },
     "extra": {

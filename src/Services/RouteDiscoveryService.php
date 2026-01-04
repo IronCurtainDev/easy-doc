@@ -200,9 +200,11 @@ class RouteDiscoveryService
             $route->methods()[0] ?? 'GET'
         );
 
+        $methodDependencies = $this->resolveMethodDependencies($reflection, $method, $request);
+
         try {
             $controllerInstance = app($controller);
-            $controllerInstance->$method($request);
+            $controllerInstance->$method(...$methodDependencies);
         } finally {
             // Auto-generation Check
             $finalCount = $this->docBuilder->getApiCalls()->count();
@@ -240,5 +242,60 @@ class RouteDiscoveryService
             // Ignore
         }
         return $rules;
+    }
+    protected function resolveMethodDependencies(\ReflectionClass $controllerRef, string $method, \Illuminate\Http\Request $request): array
+    {
+        $dependencies = [];
+        $methodRef = $controllerRef->getMethod($method);
+
+        foreach ($methodRef->getParameters() as $param) {
+            $type = $param->getType();
+
+            // 1. Handle Built-in Types (scalars)
+            if (!$type || $type->isBuiltin()) {
+                if ($param->isDefaultValueAvailable()) {
+                    $dependencies[] = $param->getDefaultValue();
+                } else {
+                    // Provide safe defaults for non-nullable scalars
+                    $typeName = $type ? $type->getName() : 'string';
+                    $dependencies[] = match ($typeName) {
+                        'int' => 1,
+                        'float' => 1.0,
+                        'bool' => true,
+                        'array' => [],
+                        default => 'test',
+                    };
+                }
+                continue;
+            }
+
+            // 2. Handle Classes
+            $typeName = $type->getName();
+
+            // Inject the Request object if type-hinted
+            if (is_a($typeName, \Illuminate\Http\Request::class, true)) {
+                $dependencies[] = $request;
+                continue;
+            }
+
+            // Try to resolve from container (for Models, Services, etc.)
+            try {
+                $dependencies[] = app($typeName);
+            } catch (\Throwable $e) {
+                // If container resolution fails, try null if allowed
+                if ($param->allowsNull()) {
+                    $dependencies[] = null;
+                } else {
+                    // Last resort: try to instantiate directly
+                    try {
+                        $dependencies[] = new $typeName();
+                    } catch (\Throwable $e) {
+                        $dependencies[] = null; // Will likely fail type check, but best effort
+                    }
+                }
+            }
+        }
+
+        return $dependencies;
     }
 }

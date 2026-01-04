@@ -179,10 +179,10 @@ return [
         // Set EASY_DOC_VISIBLE=true in your .env to enable
         'enabled' => env('EASY_DOC_VISIBLE', false),
         'route' => 'easy-doc', // The dashboard
-        'public_route' => 'docs/public', // The beautiful Redoc page
+        'public_route' => 'api-docs', // The beautiful Redoc page
 
         // Route path for the documentation viewer
-        'route' => 'easy-doc',
+
 
         // Middleware to apply to the viewer route
         'middleware' => ['web'],

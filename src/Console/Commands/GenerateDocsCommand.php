@@ -88,8 +88,8 @@ class GenerateDocsCommand extends Command
             }
 
             // 2. Generation Phase
-            $generators = $this->resolveGenerators();
             $converter = new OpenApiConverter(); // Shared converter instance
+            $generators = $this->resolveGenerators($converter);
 
             foreach ($generators as $generator) {
                 $generated = $generator->generate($apiCalls, $this->docsFolder);

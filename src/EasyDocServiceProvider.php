@@ -47,6 +47,11 @@ class EasyDocServiceProvider extends ServiceProvider
                 __DIR__ . '/../resources/assets/docs/swagger.html' => public_path('docs/swagger.html'),
                 __DIR__ . '/../resources/assets/apidoc.json' => base_path('apidoc.json'),
             ], 'easy-doc-assets');
+
+            // Publish IDE helper file for better IDE autocomplete support
+            $this->publishes([
+                __DIR__ . '/_ide_helpers.php' => base_path('_ide_helpers_easy_doc.php'),
+            ], 'easy-doc-ide-helper');
         }
 
         // Register documentation viewer route

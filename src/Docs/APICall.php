@@ -431,6 +431,12 @@ class APICall
     public function setSuccessPaginatedObject(mixed $model): static
     {
         $this->successPaginatedObject = $model;
+
+        // If it's a class string, auto-register the paginated schema
+        if (is_string($model) && class_exists($model)) {
+            $this->setSuccessPaginated($model);
+        }
+
         return $this;
     }
 
