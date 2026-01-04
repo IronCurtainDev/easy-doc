@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 /**
  * Generate TypeScript API client SDK.
  */
-class TypeScriptSDKGenerator
+class TypeScriptSDKGenerator implements \EasyDoc\Contracts\GeneratorInterface
 {
     protected string $baseUrl;
     protected string $className = 'ApiClient';
@@ -41,25 +41,28 @@ class TypeScriptSDKGenerator
         return $this;
     }
 
-    /**
-     * Add an endpoint.
-     */
-    public function addEndpoint(APICall $endpoint): static
-    {
-        $this->endpoints->push($endpoint);
-        return $this;
-    }
+
 
     /**
      * Generate the TypeScript SDK.
      */
-    public function generate(): string
+    public function generate(Collection $apiCalls, string $outputDir): array
     {
+        $this->endpoints = $apiCalls;
+
         $ts = $this->generateHeader();
         $ts .= $this->generateInterfaces();
         $ts .= $this->generateClientClass();
 
-        return $ts;
+        $filename = config('easy-doc.output.typescript.file', 'api-client.ts');
+        $outputPath = $outputDir . DIRECTORY_SEPARATOR . $filename;
+
+        if (!is_dir($outputDir)) {
+            mkdir($outputDir, 0755, true);
+        }
+        file_put_contents($outputPath, $ts);
+
+        return ['TypeScript SDK' => $outputPath];
     }
 
     /**
@@ -334,14 +337,5 @@ class TypeScriptSDKGenerator
             'object' => 'Record<string, any>',
             default => 'string',
         };
-    }
-
-    /**
-     * Save SDK to file.
-     */
-    public function save(string $path): bool
-    {
-        $content = $this->generate();
-        return file_put_contents($path, $content) !== false;
     }
 }

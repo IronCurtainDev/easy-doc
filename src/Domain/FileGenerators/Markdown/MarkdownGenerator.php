@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 /**
  * Generate GitHub-style Markdown API documentation.
  */
-class MarkdownGenerator
+class MarkdownGenerator implements \EasyDoc\Contracts\GeneratorInterface
 {
     protected string $title;
     protected string $description;
@@ -29,15 +29,6 @@ class MarkdownGenerator
         $this->version = $config['api_info']['version'] ?? '1.0.0';
         $this->baseUrl = config('app.url', 'http://localhost') . ($config['base_path'] ?? '/api/v1');
         $this->endpoints = collect();
-    }
-
-    /**
-     * Add an endpoint to the documentation.
-     */
-    public function addEndpoint(APICall $endpoint): static
-    {
-        $this->endpoints->push($endpoint);
-        return $this;
     }
 
     /**
@@ -59,16 +50,21 @@ class MarkdownGenerator
     }
 
     /**
-     * Generate the complete markdown documentation.
+     * Generate markdown documentation files.
      */
-    public function generate(): string
+    public function generate(Collection $apiCalls, string $outputDir): array
     {
+        $this->endpoints = $apiCalls;
+
         $md = $this->generateHeader();
         $md .= $this->generateTableOfContents();
         $md .= $this->generateEndpoints();
         $md .= $this->generateSchemas();
 
-        return $md;
+        $outputPath = $outputDir . DIRECTORY_SEPARATOR . 'API.md';
+        $this->saveFile($outputPath, $md);
+
+        return ['Markdown Docs' => $outputPath];
     }
 
     /**
@@ -299,11 +295,14 @@ class MarkdownGenerator
     }
 
     /**
-     * Save markdown to file.
+     * Save content to file.
      */
-    public function save(string $path): bool
+    protected function saveFile(string $path, string $content): void
     {
-        $content = $this->generate();
-        return file_put_contents($path, $content) !== false;
+        $directory = dirname($path);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+        file_put_contents($path, $content);
     }
 }

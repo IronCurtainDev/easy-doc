@@ -1,0 +1,234 @@
+<?php
+
+namespace EasyDoc\Services;
+
+use EasyDoc\Docs\DocBuilder;
+use EasyDoc\Exceptions\DocumentationModeEnabledException;
+use Illuminate\Routing\Router;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Finder\Finder;
+
+class RouteDiscoveryService
+{
+    protected Router $router;
+    protected DocBuilder $docBuilder;
+    protected ?OutputInterface $output = null;
+
+    public function __construct(Router $router, DocBuilder $docBuilder)
+    {
+        $this->router = $router;
+        $this->docBuilder = $docBuilder;
+    }
+
+    public function setOutput(OutputInterface $output): void
+    {
+        $this->output = $output;
+    }
+
+    protected function info(string $message): void
+    {
+        if ($this->output) {
+            $this->output->writeln("<info>{$message}</info>");
+        }
+    }
+
+    protected function warn(string $message): void
+    {
+        if ($this->output) {
+            $this->output->writeln("<comment>{$message}</comment>");
+        }
+    }
+
+    /**
+     * Discover and register models to SchemaBuilder.
+     */
+    public function discoverModels(): void
+    {
+        if (!config('easy-doc.auto_discover_models', true)) {
+            return;
+        }
+
+        $modelPath = config('easy-doc.model_path', app_path('Models'));
+
+        if (!File::isDirectory($modelPath)) {
+            return;
+        }
+
+        if (!class_exists(Finder::class)) {
+            $this->warn('Symfony Directory Finder component not installed. Model discovery disabled.');
+            return;
+        }
+
+        $files = Finder::create()
+            ->in($modelPath)
+            ->files()
+            ->name('*.php');
+
+        foreach ($files as $file) {
+            $className = $this->getClassFromFile($file);
+
+            if (
+                $className &&
+                class_exists($className) &&
+                is_subclass_of($className, 'Illuminate\Database\Eloquent\Model') &&
+                ! (new \ReflectionClass($className))->isAbstract()
+            ) {
+                try {
+                    \EasyDoc\Docs\SchemaBuilder::fromModel($className);
+                } catch (\Throwable $e) {
+                    if ($this->output && $this->output->isVerbose()) {
+                        $this->warn("Failed to register model {$className}: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse class name from file.
+     */
+    protected function getClassFromFile(\Symfony\Component\Finder\SplFileInfo $file): ?string
+    {
+        $contents = $file->getContents();
+
+        if (!preg_match('/namespace\s+(.+?);/', $contents, $matches)) {
+            return null;
+        }
+
+        $namespace = $matches[1];
+        $class = $file->getBasename('.php');
+
+        return $namespace . '\\' . $class;
+    }
+
+    /**
+     * Discover routes and simulate requests to build documentation.
+     */
+    public function discoverRoutes(string $basePath): void
+    {
+        $routes = $this->router->getRoutes();
+        $apiRoutes = new Collection();
+        $searchPrefix = ltrim($basePath, '/');
+
+        foreach ($routes as $route) {
+            if (str_starts_with($route->uri(), $searchPrefix)) {
+                $apiRoutes->push($route);
+            }
+        }
+
+        if ($apiRoutes->isEmpty() && $searchPrefix !== 'api') {
+            foreach ($routes as $route) {
+                if (str_starts_with($route->uri(), 'api')) {
+                    $apiRoutes->push($route);
+                }
+            }
+        }
+
+        $this->info("Found {$apiRoutes->count()} API routes to document");
+
+        $bar = $this->output ? new \Symfony\Component\Console\Helper\ProgressBar($this->output, $apiRoutes->count()) : null;
+        if ($bar) $bar->start();
+
+        foreach ($apiRoutes as $route) {
+            try {
+                $this->hitRoute($route);
+            } catch (DocumentationModeEnabledException $ex) {
+                // Expected
+            } catch (\Exception $ex) {
+                // Skip failing routes
+            }
+            if ($bar) $bar->advance();
+        }
+
+        if ($bar) $bar->finish();
+        $this->info('');
+    }
+
+    protected function hitRoute($route): void
+    {
+        $action = $route->getAction();
+
+        if (!isset($action['controller'])) {
+            return;
+        }
+
+        $controllerAction = $action['controller'];
+
+        if (is_string($controllerAction) && str_contains($controllerAction, '@')) {
+            [$controller, $method] = explode('@', $controllerAction);
+        } elseif (is_array($controllerAction) && count($controllerAction) === 2) {
+            [$controller, $method] = $controllerAction;
+        } else {
+            return;
+        }
+
+        if (!class_exists($controller)) {
+            return;
+        }
+
+        $reflection = new \ReflectionClass($controller);
+        if (!$reflection->hasMethod($method)) {
+            return;
+        }
+
+        // Spy on FormRequest injection
+        $rules = $this->resolveFormRequestRules($reflection, $method);
+
+        $this->docBuilder->setInterceptor(
+            $route->methods()[0] ?? 'GET',
+            $route->uri(),
+            $controllerAction,
+            $rules
+        );
+
+        $initialCount = $this->docBuilder->getApiCalls()->count();
+
+        $request = \Illuminate\Http\Request::create(
+            $route->uri(),
+            $route->methods()[0] ?? 'GET'
+        );
+
+        try {
+            $controllerInstance = app($controller);
+            $controllerInstance->$method($request);
+        } finally {
+            // Auto-generation Check
+            $finalCount = $this->docBuilder->getApiCalls()->count();
+            if ($finalCount === $initialCount && config('easy-doc.auto_generate', false)) {
+                $this->docBuilder->autoRegister();
+                $this->info("  Auto-generated: {$route->uri()}");
+            }
+
+            $this->docBuilder->clearInterceptor();
+        }
+    }
+
+    protected function resolveFormRequestRules(\ReflectionClass $controllerRef, string $method): array
+    {
+        $rules = [];
+        try {
+            $methodReflection = $controllerRef->getMethod($method);
+            foreach ($methodReflection->getParameters() as $param) {
+                $type = $param->getType();
+                if ($type && !$type->isBuiltin()) {
+                    $paramClass = $type->getName();
+                    if (class_exists($paramClass) && is_subclass_of($paramClass, \Illuminate\Foundation\Http\FormRequest::class)) {
+                        try {
+                            $formRequest = app($paramClass);
+                            if (method_exists($formRequest, 'rules')) {
+                                $rules = $formRequest->rules();
+                            }
+                        } catch (\Throwable $e) {
+                            // Ignore
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore
+        }
+        return $rules;
+    }
+}
