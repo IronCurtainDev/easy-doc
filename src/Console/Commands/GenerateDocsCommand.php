@@ -120,10 +120,9 @@ class GenerateDocsCommand extends Command
         return 0;
     }
 
-    protected function resolveGenerators(): array
+    protected function resolveGenerators(OpenApiConverter $converter): array
     {
         $generators = [];
-        $converter = new OpenApiConverter();
         $format = $this->option('format');
 
         // Swagger v2
