@@ -8,10 +8,10 @@ A lightweight, developer-friendly API documentation generator for Laravel.
 
 ## 🚀 Features
 
-- **Fluent API**: Define documentation where your code lives (in Controllers or Routes).
-- **Automatic Schema Discovery**: Your Eloquent models are automatically scanned and converted to schemas. No manual definition needed!
+- **Fluent API**: Define documentation directly in your Controller logic.
+- **Automatic Schema Discovery**: Eloquent models are automatically scanned.
 - **Multi-Format Output**: Markdown, OpenAPI 3.0, Swagger 2.0, Postman, TypeScript SDK.
-- **Configurable Headers**: Define global authentication headers once in your config.
+- **Flexible Headers**: Define headers globally in config OR locally in your document call.
 
 ---
 
@@ -23,7 +23,7 @@ Install via Composer:
 composer require iron-curtain/easy-doc
 ```
 
-Publish the configuration (Critical for Header setup):
+Publish the configuration (Optional):
 
 ```bash
 php artisan vendor:publish --provider="EasyDoc\EasyDocServiceProvider"
@@ -31,25 +31,7 @@ php artisan vendor:publish --provider="EasyDoc\EasyDocServiceProvider"
 
 ---
 
-## ⚙️ Configuration (Headers & Models)
-
-### Authentication Headers
-
-Define your API keys or Tokens in `config/easy-doc.php`. This sets them globally for `authenticated()` endpoints.
-
-```php
-// config/easy-doc.php
-
-'auth_headers' => [
-    [
-        'name' => 'x-api-key',
-        'type' => 'api_key', // or 'bearer'
-        'description' => 'Your API Key',
-        'required' => true,
-        'example' => 'abcdef123456', // Used in Postman/Curl examples
-    ],
-],
-```
+## ⚙️ Configuration (Auto-Discovery)
 
 ### Model Auto-Discovery
 
@@ -57,6 +39,7 @@ By default, `EasyDoc` scans your `app/Models` directory.
 You just need to ensure your models are standard Eloquent models.
 
 ```php
+// config/easy-doc.php
 'auto_discover_models' => true,
 'model_path' => app_path('Models'),
 ```
@@ -87,23 +70,11 @@ public function register(Request $request) {
             ->response(201, 'User created', ['token' => 'abc...']);
     });
 }
-
-public function login(Request $request) {
-    document(function($doc) {
-        return $doc->name('Login')
-            ->group('Auth')
-            ->body(['email', 'password'])
-            ->possibleErrors([
-                'INVALID_CREDENTIALS' => 'Wrong email or password',
-            ])
-            ->response(200, 'Login successful', ['token' => 'abc...', 'user' => schema('User')]);
-    });
-}
 ```
 
-#### Protected Endpoints
+#### Protected Endpoints (Headers)
 
-Use `->authenticated()` to automatically apply the headers defined in your config.
+You can define authentication headers directly in the documentation block.
 
 ```php
 // PlaceController.php
@@ -112,11 +83,19 @@ public function store(Request $request) {
     document(function($doc) {
         return $doc->name('Add New Place')
             ->group('Places')
-            ->authenticated() // <--- Uses 'x-api-key' from config
+            // Define Header Locally
+            ->header('x-api-key', 'abcdef123', 'Your public API key')
             ->body(['address', 'latitude', 'longitude'])
             ->response(201, 'Place Added', schema('Place'));
     });
 }
+```
+
+**Alternative:** If you prefer, you _can_ configure global headers in `config/easy-doc.php` and references them, but it is **not mandatory**.
+
+```php
+// Option: Use pre-configured header if set in config
+// ->authenticated()
 ```
 
 ### Generate Documentation ⚡
@@ -133,7 +112,7 @@ php artisan easy-doc:generate --markdown --openapi3 --sdk
 
 ### Configurable Responses
 
-Customize generic response wrappers in `config/easy-doc.php` to match your API's style (e.g., using "success" instead of "result").
+Customize generic response wrappers in `config/easy-doc.php`.
 
 ### Deprecation
 
