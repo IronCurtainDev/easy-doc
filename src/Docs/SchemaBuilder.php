@@ -225,6 +225,9 @@ class SchemaBuilder
      * Automatically reads the database columns and their types.
      * With "Smart Examples" using Faker if available.
      *
+     * If the model has an `addExtraAPIColumns()` method, those columns
+     * will be merged into the schema.
+     *
      * @param string $modelClass Fully qualified model class name (e.g., App\Models\User::class)
      * @param string|null $schemaName Optional custom schema name (defaults to model basename)
      * @param array $exclude Columns to exclude from schema
@@ -289,14 +292,70 @@ class SchemaBuilder
             }
         }
 
-        // Merge with additional properties
+        // Merge with additional properties from $include parameter
         $properties = array_merge($properties, $include);
 
-        self::define($name, [
+        // Check for addExtraAPIColumns method on the model
+        if (method_exists($model, 'addExtraAPIColumns')) {
+            $extraColumns = $model->addExtraAPIColumns();
+            $merged = self::mergeExtraColumns($properties, $extraColumns, $modelClass, $required);
+            $properties = $merged['properties'];
+            $required = $merged['required'];
+        }
+
+        // Directly set the schema (don't use define() which would double-wrap)
+        self::$schemas[$name] = [
             'type' => 'object',
             'properties' => $properties,
             'required' => $required ?? [],
-        ]);
+        ];
+    }
+
+    /**
+     * Merge extra API columns defined in model into properties.
+     * Supports SchemaType instances for fluent API.
+     *
+     * @param array $properties Existing properties
+     * @param array $extraColumns Extra columns from addExtraAPIColumns()
+     * @param string $parentModelClass The parent model class (for auto-registering related models)
+     * @param array $existingRequired Existing required fields
+     * @return array{properties: array, required: array} Merged properties and required fields
+     */
+    protected static function mergeExtraColumns(array $properties, array $extraColumns, string $parentModelClass, array $existingRequired = []): array
+    {
+        $additionalRequired = [];
+
+        foreach ($extraColumns as $columnName => $columnDef) {
+            if ($columnDef instanceof SchemaType) {
+                // Register related model schemas if needed
+                $modelClass = $columnDef->getModelClass();
+                if ($modelClass && class_exists($modelClass) && !self::has((new \ReflectionClass($modelClass))->getShortName())) {
+                    // Auto-register the related model schema
+                    self::fromModel($modelClass);
+                }
+
+                $properties[$columnName] = $columnDef->toSchema();
+
+                // Check if this column is marked as required
+                if ($columnDef->isRequired()) {
+                    $additionalRequired[] = $columnName;
+                }
+            } elseif (is_array($columnDef)) {
+                // Already a schema array
+                $properties[$columnName] = $columnDef;
+            } elseif (is_string($columnDef)) {
+                // Simple type string
+                $properties[$columnName] = [
+                    'type' => self::databaseTypeToSwagger($columnDef),
+                    'description' => ucfirst(str_replace('_', ' ', $columnName)),
+                ];
+            }
+        }
+
+        return [
+            'properties' => $properties,
+            'required' => array_merge($existingRequired, $additionalRequired),
+        ];
     }
 
     /**
@@ -342,6 +401,22 @@ class SchemaBuilder
                 ? $faker->sentence()
                 : $faker->word(),
             default => null,
+        };
+    }
+
+    /**
+     * Convert database column types to Swagger/OpenAPI types.
+     */
+    protected static function databaseTypeToSwagger(string $dbType): string
+    {
+        return match (strtolower($dbType)) {
+            'int', 'integer', 'bigint', 'smallint', 'tinyint', 'mediumint' => 'integer',
+            'float', 'double', 'decimal', 'real', 'numeric' => 'number',
+            'bool', 'boolean' => 'boolean',
+            'date', 'datetime', 'timestamp', 'time', 'year' => 'string',
+            'json', 'jsonb', 'array' => 'object',
+            'binary', 'blob', 'varbinary' => 'string',
+            default => 'string',
         };
     }
 

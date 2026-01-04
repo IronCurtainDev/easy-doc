@@ -26,7 +26,12 @@ class GenerateDocsCommand extends Command
                             {--reset : Reset and start fresh}
                             {--auto : Auto-generate documentation for all endpoints}
                             {--no-apidoc : Skip ApiDoc HTML generation}
-                            {--no-files-output : Do not show generated files}';
+                            {--no-files-output : Do not show generated files}
+                            {--markdown : Generate markdown documentation}
+                            {--sdk : Generate TypeScript SDK client}
+                            {--snapshot : Save a version snapshot for changelog}
+                            {--diff : Show changes since last version snapshot}
+                            {--prune= : Keep only last N version snapshots}';
 
     protected $description = 'Generate API Documentation with configurable headers';
 
@@ -98,9 +103,6 @@ class GenerateDocsCommand extends Command
 
             $this->createPostmanCollection();
             $this->createPostmanEnvironment();
-            if ($this->format === 'both' || $this->format === 'postman') {
-                $this->generatePostmanCollection($apiCalls);
-            }
 
             // TypeScript Generation
             $tsConfig = config('easy-doc.output.typescript', []);
@@ -110,6 +112,31 @@ class GenerateDocsCommand extends Command
                 $tsFile = $this->docsFolder . '/' . ($tsConfig['file'] ?? 'types.ts');
                 File::put($tsFile, $tsContent);
                 $this->createdFiles[] = ['TypeScript Definitions', $tsFile];
+            }
+
+            // Markdown Documentation
+            if ($this->option('markdown')) {
+                $this->generateMarkdownDocs();
+            }
+
+            // TypeScript SDK Client
+            if ($this->option('sdk')) {
+                $this->generateSdkClient();
+            }
+
+            // API Version Snapshot
+            if ($this->option('snapshot')) {
+                $this->saveVersionSnapshot();
+            }
+
+            // API Version Diff
+            if ($this->option('diff')) {
+                $this->showVersionDiff();
+            }
+
+            // Prune Old Versions
+            if ($pruneCount = $this->option('prune')) {
+                $this->pruneOldVersions((int) $pruneCount);
             }
 
             $this->copySwaggerUI();
@@ -729,5 +756,106 @@ class GenerateDocsCommand extends Command
         $outputPath = $this->docsFolder . DIRECTORY_SEPARATOR . 'postman_environment.json';
         File::put($outputPath, json_encode($environment, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         $this->createdFiles[] = ['Postman Environment', $this->stripBasePath($outputPath)];
+    }
+
+    /**
+     * Generate Markdown documentation.
+     */
+    protected function generateMarkdownDocs(): void
+    {
+        $mdGenerator = new \EasyDoc\Domain\FileGenerators\Markdown\MarkdownGenerator();
+
+        foreach ($this->docBuilder->getApiCalls() as $item) {
+            $mdGenerator->addEndpoint($item);
+        }
+
+        $outputPath = $this->docsFolder . DIRECTORY_SEPARATOR . 'API.md';
+        $mdGenerator->save($outputPath);
+        $this->createdFiles[] = ['Markdown Docs', $this->stripBasePath($outputPath)];
+        $this->info('  [OK] Markdown documentation generated');
+    }
+
+    /**
+     * Generate TypeScript SDK client.
+     */
+    protected function generateSdkClient(): void
+    {
+        $sdkGenerator = new \EasyDoc\Domain\FileGenerators\SDK\TypeScriptSDKGenerator();
+
+        foreach ($this->docBuilder->getApiCalls() as $item) {
+            $sdkGenerator->addEndpoint($item);
+        }
+
+        $outputPath = $this->docsFolder . DIRECTORY_SEPARATOR . 'api-client.ts';
+        $sdkGenerator->save($outputPath);
+        $this->createdFiles[] = ['TypeScript SDK', $this->stripBasePath($outputPath)];
+        $this->info('  [OK] TypeScript SDK client generated');
+    }
+
+    /**
+     * Save a version snapshot for changelog.
+     */
+    protected function saveVersionSnapshot(): void
+    {
+        $swaggerPath = $this->docsFolder . DIRECTORY_SEPARATOR . 'swagger.json';
+        if (!File::exists($swaggerPath)) {
+            $this->warn('Cannot save snapshot: swagger.json not found');
+            return;
+        }
+
+        $schema = json_decode(File::get($swaggerPath), true);
+        $changelog = new \EasyDoc\Domain\Changelog\ChangelogManager();
+        $changelog->setCurrentSchema($schema);
+        $path = $changelog->saveSnapshot();
+
+        $this->info("  [OK] Version snapshot saved");
+        $this->createdFiles[] = ['Version Snapshot', $path];
+    }
+
+    /**
+     * Show diff against last version.
+     */
+    protected function showVersionDiff(): void
+    {
+        $swaggerPath = $this->docsFolder . DIRECTORY_SEPARATOR . 'swagger.json';
+        if (!File::exists($swaggerPath)) {
+            $this->warn('Cannot compare: swagger.json not found');
+            return;
+        }
+
+        $schema = json_decode(File::get($swaggerPath), true);
+        $changelog = new \EasyDoc\Domain\Changelog\ChangelogManager();
+        $changelog->setCurrentSchema($schema);
+
+        $diff = $changelog->compareWithLatest();
+
+        if (isset($diff['error'])) {
+            $this->warn($diff['error']);
+            return;
+        }
+
+        // Generate and display changelog
+        $changelogMd = $changelog->generateChangelog($diff);
+
+        // Save to file
+        $outputPath = $this->docsFolder . DIRECTORY_SEPARATOR . 'CHANGELOG.md';
+        File::put($outputPath, $changelogMd);
+        $this->createdFiles[] = ['API Changelog', $this->stripBasePath($outputPath)];
+        $this->info('  [OK] Changelog generated');
+    }
+
+    /**
+     * Prune old version snapshots.
+     */
+    protected function pruneOldVersions(int $keep): void
+    {
+        $changelog = new \EasyDoc\Domain\Changelog\ChangelogManager();
+        $deleted = $changelog->prune($keep);
+
+        if ($deleted > 0) {
+            $this->info("  [OK] Pruned {$deleted} old version snapshot(s)");
+        } else {
+            $this->info("  No old versions to prune");
+        }
     }
 }

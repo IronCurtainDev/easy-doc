@@ -43,3 +43,28 @@ if (!function_exists('easy_doc_config')) {
         return config("easy-doc.{$key}", $default);
     }
 }
+
+if (!function_exists('type')) {
+    /**
+     * Create a SchemaType for defining extra API columns in models.
+     *
+     * Usage in models:
+     * ```php
+     * public function addExtraAPIColumns(): array
+     * {
+     *     return [
+     *         'access_token' => type('string')->example('eyJ0eXAi...'),
+     *         'places' => type('array')->of(Place::class),
+     *         'profile' => type('object')->model(Profile::class),
+     *     ];
+     * }
+     * ```
+     *
+     * @param string $type The base type (string, integer, boolean, array, object)
+     * @return \EasyDoc\Docs\SchemaType
+     */
+    function type(string $type = 'string'): \EasyDoc\Docs\SchemaType
+    {
+        return new \EasyDoc\Docs\SchemaType($type);
+    }
+}

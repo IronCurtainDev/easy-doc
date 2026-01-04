@@ -81,7 +81,7 @@ In your controllers, use the `document()` helper:
 use EasyDoc\Docs\APICall;
 use EasyDoc\Docs\Param;
 
-public function register(Request \)
+public function register(Request $request)
 {
     document(function () {
         return (new APICall())
@@ -117,6 +117,128 @@ public function logout(Request \)
 ```bash
 php artisan easy-doc:generate
 ```
+
+## Complete Authentication API Example
+
+Here's a real-world example implementing register, login, logout, and profile endpoints with Laravel Sanctum:
+
+```php
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use EasyDoc\Docs\APICall;
+use EasyDoc\Docs\Param;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+
+class AuthController extends Controller
+{
+    public function register(Request $request): JsonResponse
+    {
+        document(function () {
+            return (new APICall())
+                ->setName('Register')
+                ->setGroup('Authentication')
+                ->setDescription('Register a new user account and return an access token.')
+                ->setTags(['Authentication', 'Public'])
+                ->setParams([
+                    (new Param('name', 'string', 'Full name of the user'))->setExample('John Doe'),
+                    (new Param('email', 'string', 'Email address (must be unique)'))->setExample('user@example.com'),
+                    (new Param('password', 'string', 'Password (minimum 8 characters)'))->setExample('SecurePass123!'),
+                    (new Param('password_confirmation', 'string', 'Password confirmation'))->setExample('SecurePass123!'),
+                ])
+                ->setSuccessObject(User::class) // Auto-generates User model schema!
+                ->setSuccessExample([
+                    'success' => true,
+                    'message' => 'User registered successfully',
+                    'data' => [
+                        'access_token' => 'eyJ0eXAiOiJKV1QiLCJhbGci...',
+                        'token_type' => 'Bearer',
+                        'user' => ['id' => 1, 'name' => 'John Doe', 'email' => 'john.doe@example.com'],
+                    ],
+                ], 201, 'User registered successfully')
+                ->setErrorExample([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['email' => ['The email has already been taken.']],
+                ], 422, 'Validation error')
+                ->rateLimit(5, 'minute');
+        });
+
+        // Your registration logic...
+    }
+
+    public function login(Request $request): JsonResponse
+    {
+        document(function () {
+            return (new APICall())
+                ->setName('Login')
+                ->setGroup('Authentication')
+                ->setDescription('Authenticate user and return access token.')
+                ->setTags(['Authentication', 'Public'])
+                ->setParams([
+                    (new Param('email', 'string', 'Email address'))->setExample('user@example.com'),
+                    (new Param('password', 'string', 'Password'))->setExample('SecurePass123!'),
+                ])
+                ->setSuccessObject(User::class)
+                ->setErrorExample(['success' => false, 'message' => 'Invalid credentials'], 401)
+                ->rateLimit(10, 'minute');
+        });
+
+        // Your login logic...
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        document(function () {
+            return (new APICall())
+                ->setName('Logout')
+                ->setGroup('Authentication')
+                ->setDescription('Revoke the current access token.')
+                ->setTags(['Authentication', 'Protected'])
+                ->addHeader((new Param('Authorization', 'string', 'Bearer token'))->setExample('Bearer eyJ0eXAi...'))
+                ->setParams([])
+                ->setSuccessMessageOnly() // Simple {success: true, message: "..."} response
+                ->setSuccessExample(['success' => true, 'message' => 'Logged out successfully'], 200);
+        });
+
+        // Your logout logic...
+    }
+
+    public function profile(Request $request): JsonResponse
+    {
+        document(function () {
+            return (new APICall())
+                ->setName('Get Profile')
+                ->setGroup('Authentication')
+                ->setDescription('Get the authenticated user profile.')
+                ->setTags(['Authentication', 'Protected'])
+                ->addHeader((new Param('Authorization', 'string', 'Bearer token'))->setExample('Bearer eyJ0eXAi...'))
+                ->setParams([])
+                ->setSuccessObject(User::class); // Returns User model schema
+        });
+
+        // Your profile logic...
+    }
+}
+```
+
+**Key Features Used:**
+
+| Method                          | Purpose                                          |
+| ------------------------------- | ------------------------------------------------ |
+| `setSuccessObject(User::class)` | Auto-generates model schema from Eloquent model  |
+| `setSuccessMessageOnly()`       | Simple `{success, message}` response             |
+| `setSuccessExample()`           | Document exact response structure                |
+| `setErrorExample()`             | Document error responses                         |
+| `addHeader()`                   | Add Authorization header for protected endpoints |
+| `rateLimit()`                   | Document rate limiting                           |
 
 ## Viewing Documentation
 
@@ -184,9 +306,62 @@ Forget defining schemas manually! Just pass your Eloquent model:
 // Auto-generates User schema and returns { success: true, data: [...], meta: {...}, links: {...} }
 ```
 
-You can still use `SchemaBuilder::defineResource()` if you need to customize relationships or fields first.
+## 🔧 Extra API Columns
 
-You can still use `SchemaBuilder::defineResource()` if you need to customize relationships or fields first.
+Need to add extra columns to your model schema that aren't in the database? Use the `addExtraAPIColumns()` method in your model:
+
+```php
+use App\Models\Place;
+
+class User extends Authenticatable
+{
+    // ... existing model code ...
+
+    /**
+     * Define extra API columns for Swagger documentation.
+     */
+    public function addExtraAPIColumns(): array
+    {
+        return [
+            // Simple string field with example
+            'access_token' => type('string')
+                ->description('JWT access token for API authentication')
+                ->example('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'),
+
+            // String with fixed example
+            'token_type' => type('string')
+                ->description('Token type (always Bearer)')
+                ->example('Bearer'),
+
+            // Array of related model objects
+            'places' => type('array')
+                ->of(Place::class)
+                ->description('List of places owned by this user'),
+
+            // Single related object
+            'profile' => type('object')
+                ->model(Profile::class)
+                ->nullable(),
+        ];
+    }
+}
+```
+
+**Features:**
+
+| Method                  | Description                              |
+| ----------------------- | ---------------------------------------- |
+| `type('string')`        | Create a string field                    |
+| `type('integer')`       | Create an integer field                  |
+| `type('boolean')`       | Create a boolean field                   |
+| `->description()`       | Add field description                    |
+| `->example()`           | Set example value                        |
+| `->model(Model::class)` | Reference another model (single object)  |
+| `->of(Model::class)`    | Array of model objects                   |
+| `->nullable()`          | Mark as nullable                         |
+| `->format('email')`     | Set format (email, date-time, uri, etc.) |
+
+> **Note:** Related models are automatically registered as separate schemas!
 
 ## 🤖 Smart Automation
 
@@ -461,6 +636,55 @@ EasyDoc automatically finds all your Eloquent models in `app/Models` and registe
 
 - No need to manually call `SchemaBuilder::fromModel()`.
 - Disabling this: Set `'auto_discover_models' => false` in `config/easy-doc.php`.
+
+## 🔌 Extra API Columns
+
+Add virtual fields to your model's Swagger schema that aren't in the database:
+
+```php
+use EasyDoc\Contracts\HasExtraApiColumns;
+
+class User extends Model implements HasExtraApiColumns
+{
+    public function addExtraAPIColumns(): array
+    {
+        return [
+            'access_token' => type('string')
+                ->description('JWT access token')
+                ->example('eyJ0eXAi...')
+                ->nullable(),
+
+            'status' => type('string')
+                ->enum(['active', 'inactive', 'pending'])
+                ->default('active'),
+
+            'places' => type('array')
+                ->of(Place::class)
+                ->description('User places'),
+        ];
+    }
+}
+```
+
+### type() Helper Reference
+
+| Method                            | Description                      |
+| --------------------------------- | -------------------------------- |
+| `type('string')`                  | Basic string field               |
+| `type('email')`                   | String with email format         |
+| `type('url')`                     | String with URI format           |
+| `type('uuid')`                    | String with UUID format          |
+| `type('datetime')`                | String with date-time format     |
+| `->description()`                 | Add field description            |
+| `->example()`                     | Set example value                |
+| `->nullable()`                    | Mark as nullable                 |
+| `->required()`                    | Mark as required                 |
+| `->enum([...])`                   | Set allowed values               |
+| `->default()`                     | Set default value                |
+| `->model(Model::class)`           | Reference another model (single) |
+| `->of(Model::class)`              | Array of model objects           |
+| `->min()` / `->max()`             | Number constraints               |
+| `->minLength()` / `->maxLength()` | String length constraints        |
 
 ## Requirements
 

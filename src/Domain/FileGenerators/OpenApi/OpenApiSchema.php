@@ -223,17 +223,29 @@ class OpenApiSchema extends BaseFileGenerator
     }
 
     /**
-     * Convert Swagger 2.0 $ref to OpenAPI 3.0 format.
+     * Convert Swagger 2.0 $ref to OpenAPI 3.0 format recursively.
      */
     protected function convertSchemaRef(array $schema): array
     {
-        if (isset($schema['$ref'])) {
-            // Convert #/definitions/Name to #/components/schemas/Name
-            $ref = str_replace('#/definitions/', '#/components/schemas/', $schema['$ref']);
-            return ['$ref' => $ref];
+        return $this->convertRefsRecursive($schema);
+    }
+
+    /**
+     * Recursively convert all #/definitions/ refs to #/components/schemas/.
+     */
+    protected function convertRefsRecursive(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if ($key === '$ref' && is_string($value)) {
+                // Convert #/definitions/Name to #/components/schemas/Name
+                $data[$key] = str_replace('#/definitions/', '#/components/schemas/', $value);
+            } elseif (is_array($value)) {
+                // Recursively process nested arrays
+                $data[$key] = $this->convertRefsRecursive($value);
+            }
         }
 
-        return $schema;
+        return $data;
     }
 
     /**
@@ -253,11 +265,13 @@ class OpenApiSchema extends BaseFileGenerator
     }
 
     /**
-     * Add a schema to components.
+     * Add a schema to components with ref conversion.
      */
     public function addSchema(string $name, array $schema): static
     {
-        $this->schema['components']['schemas'][$name] = $schema;
+        // Convert all refs from Swagger 2.0 format to OpenAPI 3.0 format
+        $convertedSchema = $this->convertRefsRecursive($schema);
+        $this->schema['components']['schemas'][$name] = $convertedSchema;
         return $this;
     }
 }
