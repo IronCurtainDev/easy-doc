@@ -1,5 +1,5 @@
 {
-    "name": "easypack/doc",
+    "name": "ironcurtaindev/easy-doc",
     "description": "A lightweight Laravel package for API documentation generation with configurable headers",
     "type": "library",
     "license": "MIT",
