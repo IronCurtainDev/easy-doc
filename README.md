@@ -48,6 +48,14 @@ Working alone? `Easy-Doc` acts as your memory.
 
 Install via Composer:
 
+### Stable Version (Recommended)
+
+```bash
+composer require ironcurtaindev/easy-doc:^0.1
+```
+
+### Development Version (Bleeding Edge)
+
 ```bash
 composer require ironcurtaindev/easy-doc:dev-main
 ```
