@@ -1,5 +1,8 @@
 # EasyDoc 📚
 
+[![Packagist Version](https://img.shields.io/packagist/v/ironcurtaindev/easy-doc)](https://packagist.org/packages/ironcurtaindev/easy-doc)
+[![Total Downloads](https://img.shields.io/packagist/dt/ironcurtaindev/easy-doc)](https://packagist.org/packages/ironcurtaindev/easy-doc)
+
 A lightweight, developer-friendly API documentation generator for Laravel.
 
 **Stop writing YAML manually.** `EasyDoc` auto-generates beautiful Markdown documentation, OpenAPI (Swagger) specs, Postman collections, and even a fully typed TypeScript SDK directly from your Laravel codebase using a fluent, expressive API.
