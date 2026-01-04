@@ -49,7 +49,7 @@ Working alone? `Easy-Doc` acts as your memory.
 Install via Composer:
 
 ```bash
-composer require iron-curtain/easy-doc
+composer require ironcurtaindev/easy-doc
 ```
 
 Publish the configuration (Optional):
