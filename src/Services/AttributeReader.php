@@ -12,6 +12,7 @@ use EasyDoc\Attributes\DocParam;
 use EasyDoc\Attributes\DocResponse;
 use EasyDoc\Docs\APICall;
 use EasyDoc\Docs\Param;
+use EasyDoc\Exceptions\InvalidDocAttributeException;
 use ReflectionClass;
 use ReflectionMethod;
 
@@ -313,6 +314,10 @@ class AttributeReader
             /** @var DocResponse $docResponse */
             $docResponse = $attribute->newInstance();
 
+            if (!is_int($docResponse->status) || $docResponse->status < 100 || $docResponse->status > 599) {
+                throw InvalidDocAttributeException::forAttribute(DocResponse::class, "Status code must be a valid integer between 100 and 599, got: " . var_export($docResponse->status, true));
+            }
+
             if ($docResponse->isError) {
                 $apiCall->setErrorExample(
                     $docResponse->example,
@@ -500,8 +505,14 @@ class AttributeReader
         }
 
         // Merge template with explicit values (explicit values override template)
+        $paramName = $docParam->name ?? ($template['name'] ?? $docParam->template);
+
+        if (empty($paramName)) {
+            throw InvalidDocAttributeException::forAttribute(DocParam::class, "Parameter name is required and cannot be empty.");
+        }
+
         return [
-            'name' => $docParam->name ?? ($template['name'] ?? $docParam->template),
+            'name' => $paramName,
             'type' => $docParam->type !== 'string' ? $docParam->type : ($template['type'] ?? 'string'),
             'description' => $docParam->description ?? ($template['description'] ?? null),
             'example' => $docParam->example ?? ($template['example'] ?? null),
