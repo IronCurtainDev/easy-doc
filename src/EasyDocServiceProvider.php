@@ -82,6 +82,9 @@ class EasyDocServiceProvider extends ServiceProvider
 
                 Route::get($publicPath, [DocumentationController::class, 'redoc'])
                     ->name('easy-doc.public');
+
+                Route::get('docs/scalar', [DocumentationController::class, 'scalar'])
+                    ->name('easy-doc.scalar');
             });
     }
 }

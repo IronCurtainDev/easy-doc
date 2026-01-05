@@ -222,6 +222,7 @@ class DocumentationController extends Controller
         <p class="subtitle">Browse and download your API documentation files</p>
 
         <a href="/docs/index.html" class="swagger-btn" target="_blank">Open Swagger UI</a>
+        <a href="/docs/scalar" class="swagger-btn" style="background: linear-gradient(135deg, #2D3748, #1A202C);" target="_blank">Open Scalar UI (Modern)</a>
 
         <div class="card">
             <h2>Documentation Files</h2>
@@ -348,6 +349,35 @@ class DocumentationController extends Controller
         }\'
     ></redoc>
     <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"> </script>
+  </body>
+</html>';
+    }
+    public function scalar()
+    {
+        if (!config('easy-doc.viewer.enabled', false)) {
+            abort(404);
+        }
+
+        $openApiJsonUrl = asset('docs/openapi.json');
+        $appName = config('app.name', 'API');
+
+        return '<!doctype html>
+<html>
+  <head>
+    <title>' . $appName . ' - API Reference</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <script
+      id="api-reference"
+      data-url="' . $openApiJsonUrl . '"
+      data-proxy-url="https://proxy.scalar.com"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   </body>
 </html>';
     }

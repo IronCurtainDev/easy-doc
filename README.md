@@ -507,6 +507,7 @@ EASY_DOC_VISIBLE=true
 Then visit:
 
 -   **Public Documentation (Redoc)**: `http://your-app.test/api-docs` (Beautiful, client-facing docs)
+-   **Modern API Reference (Scalar)**: `http://your-app.test/docs/scalar` (Interactive, dark mode, beautiful)
 -   **Dashboard (Swagger UI)**: `http://your-app.test/easy-doc` (Interactive testing dashboard)
 
 ---
