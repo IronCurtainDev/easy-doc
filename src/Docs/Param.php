@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace EasyDoc\Docs;
 
 use Illuminate\Contracts\Support\Arrayable;
@@ -20,6 +22,7 @@ class Param implements Arrayable, \JsonSerializable
     // Data Types
     public const TYPE_STRING = 'string';
     public const TYPE_INT = 'integer';
+    public const TYPE_INTEGER = 'integer';
     public const TYPE_NUMBER = 'number';
     public const TYPE_FLOAT = 'number';
     public const TYPE_DOUBLE = 'number';

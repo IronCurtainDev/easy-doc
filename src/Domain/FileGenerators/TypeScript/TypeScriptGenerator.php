@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace EasyDoc\Domain\FileGenerators\TypeScript;
 
 use EasyDoc\Docs\SchemaBuilder;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace EasyDoc\Domain\FileGenerators\Postman;
 
 use EasyDoc\Contracts\GeneratorInterface;

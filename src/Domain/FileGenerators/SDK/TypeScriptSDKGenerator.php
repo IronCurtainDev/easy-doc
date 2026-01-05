@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace EasyDoc\Domain\FileGenerators\SDK;
 
 use EasyDoc\Docs\APICall;

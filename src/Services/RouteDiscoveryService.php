@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace EasyDoc\Services;
 
 use EasyDoc\Docs\DocBuilder;
@@ -253,7 +255,7 @@ class RouteDiscoveryService
             $methodReflection = $controllerRef->getMethod($method);
             foreach ($methodReflection->getParameters() as $param) {
                 $type = $param->getType();
-                if ($type && !$type->isBuiltin()) {
+                if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
                     $paramClass = $type->getName();
                     if (class_exists($paramClass) && is_subclass_of($paramClass, \Illuminate\Foundation\Http\FormRequest::class)) {
                         try {
@@ -281,12 +283,12 @@ class RouteDiscoveryService
             $type = $param->getType();
 
             // 1. Handle Built-in Types (scalars)
-            if (!$type || $type->isBuiltin()) {
+            if (!$type || ($type instanceof \ReflectionNamedType && $type->isBuiltin())) {
                 if ($param->isDefaultValueAvailable()) {
                     $dependencies[] = $param->getDefaultValue();
                 } else {
                     // Provide safe defaults for non-nullable scalars
-                    $typeName = $type ? $type->getName() : 'string';
+                    $typeName = ($type instanceof \ReflectionNamedType) ? $type->getName() : 'string';
                     $dependencies[] = match ($typeName) {
                         'int' => 1,
                         'float' => 1.0,
@@ -299,6 +301,12 @@ class RouteDiscoveryService
             }
 
             // 2. Handle Classes
+            // Only support named types for injection
+            if (!($type instanceof \ReflectionNamedType)) {
+                $dependencies[] = null;
+                continue;
+            }
+
             $typeName = $type->getName();
 
             // Inject the Request object if type-hinted

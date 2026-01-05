@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace EasyDoc\Domain\FileGenerators\OpenApi;
 
 use EasyDoc\Domain\FileGenerators\BaseFileGenerator;

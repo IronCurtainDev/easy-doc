@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use EasyDoc\Docs\DocBuilder;
 use EasyDoc\Exceptions\DocumentationModeEnabledException;
 
