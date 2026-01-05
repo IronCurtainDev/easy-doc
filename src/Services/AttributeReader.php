@@ -10,6 +10,7 @@ use EasyDoc\Attributes\DocGroup;
 use EasyDoc\Attributes\DocHeader;
 use EasyDoc\Attributes\DocParam;
 use EasyDoc\Attributes\DocResponse;
+use EasyDoc\Attributes\DocRequest;
 use EasyDoc\Docs\APICall;
 use EasyDoc\Docs\Param;
 use EasyDoc\Exceptions\InvalidDocAttributeException;
@@ -162,6 +163,9 @@ class AttributeReader
 
         // Read repeatable DocParam attributes
         $this->applyParamAttributes($reflection, $apiCall);
+
+        // Read DocRequest attribute
+        $this->applyDocRequest($reflection, $apiCall);
 
         // Read repeatable DocHeader attributes
         $this->applyHeaderAttributes($reflection, $apiCall);
@@ -555,5 +559,86 @@ class AttributeReader
                 $docError->description ?? $preset['description'] ?? 'Error'
             );
         }
+    }
+    /**
+     * Apply DocRequest attribute to the APICall.
+     * Reads validation rules from a FormRequest and converts them to params.
+     */
+    protected function applyDocRequest(ReflectionMethod $reflection, APICall $apiCall): void
+    {
+        $attributes = $reflection->getAttributes(DocRequest::class);
+
+        if (empty($attributes)) {
+            return;
+        }
+
+        /** @var DocRequest $docRequest */
+        $docRequest = $attributes[0]->newInstance();
+        $requestClass = $docRequest->requestClass;
+
+        if (!class_exists($requestClass)) {
+            return;
+        }
+
+        try {
+            // Resolve form request using container
+            $formRequest = app($requestClass);
+
+            if (!method_exists($formRequest, 'rules')) {
+                return;
+            }
+
+            $rules = $formRequest->rules();
+            $params = [];
+
+            foreach ($rules as $field => $rule) {
+                $param = $this->convertRuleToParam($field, $rule);
+                if ($param) {
+                    $params[] = $param;
+                }
+            }
+
+            if (!empty($params)) {
+                $existingParams = $apiCall->getParams();
+                $apiCall->setParams(array_merge($existingParams, $params));
+            }
+        } catch (\Throwable $e) {
+            // Ignore errors during resolution to avoid breaking documentation generation
+        }
+    }
+
+    /**
+     * Convert a validation rule to a Param object.
+     */
+    protected function convertRuleToParam(string $field, mixed $rule): ?Param
+    {
+        if (is_string($rule)) {
+            $rule = explode('|', $rule);
+        }
+
+        if (!is_array($rule)) {
+            return null;
+        }
+
+        // Determine type
+        $type = Param::TYPE_STRING;
+        if (in_array('integer', $rule) || in_array('int', $rule)) {
+            $type = Param::TYPE_INTEGER;
+        } elseif (in_array('numeric', $rule)) {
+            $type = Param::TYPE_NUMBER;
+        } elseif (in_array('boolean', $rule) || in_array('bool', $rule)) {
+            $type = Param::TYPE_BOOLEAN;
+        } elseif (in_array('array', $rule)) {
+            $type = Param::TYPE_ARRAY;
+        }
+
+        $param = new Param($field, $type, 'Auto-generated from FormRequest');
+
+        // Required
+        if (!in_array('required', $rule)) {
+            $param->optional();
+        }
+
+        return $param;
     }
 }

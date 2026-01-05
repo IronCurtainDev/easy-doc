@@ -7,7 +7,7 @@ namespace EasyDoc\Docs;
 /**
  * APICall class for defining API endpoint documentation.
  */
-class APICall
+class APICall implements \Illuminate\Contracts\Support\Arrayable
 {
     public const CONSUME_JSON = 'application/json';
     public const CONSUME_FORM_URLENCODED = 'application/x-www-form-urlencoded';
@@ -752,5 +752,26 @@ class APICall
         $lines[] = "###";
 
         return implode("\r\n", $lines);
+    }
+    /**
+     * Convert the object to an array.
+     */
+    public function toArray(): array
+    {
+        return get_object_vars($this);
+    }
+
+    /**
+     * Create an instance from an array.
+     */
+    public static function fromArray(array $data): self
+    {
+        $instance = new self();
+        foreach ($data as $key => $value) {
+            if (property_exists($instance, $key)) {
+                $instance->{$key} = $value;
+            }
+        }
+        return $instance;
     }
 }

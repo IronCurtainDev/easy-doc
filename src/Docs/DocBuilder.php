@@ -26,6 +26,18 @@ class DocBuilder
         $this->apiCalls = new Collection();
     }
 
+
+
+    /**
+     * Load API calls from cache array.
+     */
+    public function loadApiCalls(array $calls): void
+    {
+        $this->apiCalls = collect($calls)->map(function ($call) {
+            return is_array($call) ? APICall::fromArray($call) : $call;
+        });
+    }
+
     /**
      * Register an API Call with the Doc Builder.
      */

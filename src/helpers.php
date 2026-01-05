@@ -11,6 +11,7 @@ if (!function_exists('document')) {
      *
      * @param callable $callback A callback that returns an APICall instance
      * @return void
+     * @deprecated Since 2.0.0. Use PHP 8 Attributes (#[DocAPI]) instead.
      * @throws DocumentationModeEnabledException In documentation mode
      */
     function document(callable $callback): void

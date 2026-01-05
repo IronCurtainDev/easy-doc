@@ -37,6 +37,8 @@ class EasyDocServiceProvider extends ServiceProvider
             $this->commands([
                 GenerateDocsCommand::class,
                 Console\Commands\InstallCommand::class,
+                Console\Commands\CacheDocsCommand::class,
+                Console\Commands\ClearCacheCommand::class,
             ]);
 
             // Publish configuration

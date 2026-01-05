@@ -121,6 +121,15 @@ class RouteDiscoveryService
      */
     public function discoverRoutes(string $basePath): void
     {
+        // Check for cache first (V2.0 Feature)
+        $cachePath = base_path('bootstrap/cache/easy-doc.php');
+        if (File::exists($cachePath)) {
+            $this->info('Loading data from cache...');
+            $calls = require $cachePath;
+            $this->docBuilder->loadApiCalls($calls);
+            return;
+        }
+
         $routes = $this->router->getRoutes();
         $apiRoutes = new Collection();
         $searchPrefix = ltrim($basePath, '/');
