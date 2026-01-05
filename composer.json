@@ -1,6 +1,6 @@
 {
     "name": "ironcurtaindev/easy-doc",
-    "description": "A lightweight Laravel package for API documentation generation with configurable headers",
+    "description": "A lightweight Laravel package for API documentation generation with PHP 8 Attributes support and configurable headers",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -9,7 +9,9 @@
         "documentation",
         "swagger",
         "openapi",
-        "postman"
+        "postman",
+        "php-attributes",
+        "sdk"
     ],
     "authors": [
         {

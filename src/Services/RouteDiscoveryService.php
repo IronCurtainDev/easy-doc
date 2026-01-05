@@ -4,6 +4,7 @@ namespace EasyDoc\Services;
 
 use EasyDoc\Docs\DocBuilder;
 use EasyDoc\Exceptions\DocumentationModeEnabledException;
+use EasyDoc\Services\AttributeReader;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
@@ -182,6 +183,34 @@ class RouteDiscoveryService
         if (!$reflection->hasMethod($method)) {
             return;
         }
+
+        // =====================================================
+        // PHP 8 Attributes Approach (preferred)
+        // Check for DocAPI attribute before invoking the method
+        // =====================================================
+        $attributeReader = new AttributeReader();
+        $apiCall = $attributeReader->readFromMethod($controller, $method);
+
+        if ($apiCall !== null) {
+            // Set route and method from the actual route
+            $apiCall->setRoute($route->uri());
+            $apiCall->setMethod($route->methods()[0] ?? 'GET');
+
+            // Set group from controller name if not specified
+            if (empty($apiCall->getGroup())) {
+                $group = str_replace('Controller', '', $reflection->getShortName());
+                $apiCall->setGroup($group);
+            }
+
+            // Register and skip method invocation
+            $this->docBuilder->register($apiCall);
+            return;
+        }
+
+        // =====================================================
+        // Legacy Approach: document() function inside method
+        // Only runs if no DocAPI attribute was found
+        // =====================================================
 
         // Spy on FormRequest injection
         $rules = $this->resolveFormRequestRules($reflection, $method);

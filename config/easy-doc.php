@@ -54,6 +54,126 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Parameter Templates (Reusable)
+    |--------------------------------------------------------------------------
+    |
+    | Define reusable parameter templates that can be referenced by name
+    | in your DocParam attributes using the 'template' property.
+    |
+    | Example usage in controller:
+    | #[DocParam(template: 'email')]
+    | #[DocParam(template: 'password')]
+    |
+    */
+    'param_templates' => [
+        'email' => [
+            'type' => 'string',
+            'description' => 'Email address',
+            'example' => 'user@example.com',
+            'required' => true,
+            'pattern' => '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+        ],
+        'password' => [
+            'type' => 'string',
+            'description' => 'Password',
+            'example' => 'secret123',
+            'required' => true,
+            'min' => 8,
+        ],
+        'name' => [
+            'type' => 'string',
+            'description' => 'Full name',
+            'example' => 'John Doe',
+            'required' => true,
+            'min' => 2,
+            'max' => 255,
+        ],
+        'page' => [
+            'type' => 'integer',
+            'description' => 'Page number for pagination',
+            'example' => 1,
+            'required' => false,
+            'location' => 'query',
+        ],
+        'per_page' => [
+            'type' => 'integer',
+            'description' => 'Number of items per page',
+            'example' => 15,
+            'required' => false,
+            'location' => 'query',
+            'min' => 1,
+            'max' => 100,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Error Response Presets
+    |--------------------------------------------------------------------------
+    |
+    | Define common error responses that can be referenced by name
+    | using the DocError attribute or 'errorPreset' in DocResponse.
+    |
+    | Example usage in controller:
+    | #[DocError('validation')]
+    | #[DocError('unauthenticated')]
+    |
+    */
+    'error_presets' => [
+        'validation' => [
+            'status' => 422,
+            'description' => 'Validation Error',
+            'example' => [
+                'result' => false,
+                'message' => 'The given data was invalid.',
+                'errors' => ['field' => ['The field is required.']],
+            ],
+        ],
+        'unauthenticated' => [
+            'status' => 401,
+            'description' => 'Unauthenticated',
+            'example' => [
+                'result' => false,
+                'message' => 'Unauthenticated.',
+            ],
+        ],
+        'unauthorized' => [
+            'status' => 403,
+            'description' => 'Unauthorized',
+            'example' => [
+                'result' => false,
+                'message' => 'You are not authorized to perform this action.',
+            ],
+        ],
+        'not_found' => [
+            'status' => 404,
+            'description' => 'Not Found',
+            'example' => [
+                'result' => false,
+                'message' => 'Resource not found.',
+            ],
+        ],
+        'rate_limit' => [
+            'status' => 429,
+            'description' => 'Too Many Requests',
+            'example' => [
+                'result' => false,
+                'message' => 'Too many requests. Please try again later.',
+            ],
+        ],
+        'server_error' => [
+            'status' => 500,
+            'description' => 'Server Error',
+            'example' => [
+                'result' => false,
+                'message' => 'An unexpected error occurred.',
+            ],
+        ],
+    ],
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Default Headers
     |--------------------------------------------------------------------------
     |
