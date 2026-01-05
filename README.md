@@ -10,12 +10,12 @@ A lightweight, developer-friendly API documentation generator for Laravel.
 
 ## 🚀 Features
 
-- **Fluent API**: Define documentation directly in your Controller logic using `document()` function.
-- **PHP 8 Attributes**: Alternatively, use `#[DocAPI]`, `#[DocParam]`, `#[DocHeader]`, `#[DocResponse]` attributes for cleaner code.
-- **Automatic Schema Discovery**: Eloquent models are automatically scanned.
-- **Mobile Ready**: Generated **OpenAPI 3.0** & **Swagger 2.0** specs are perfect for generating **iOS (Swift)** and **Android (Kotlin)** clients via generic code generators.
-- **Multi-Format Output**: Markdown, OpenAPI 3.0, Swagger 2.0, Postman, TypeScript SDK.
-- **Configurable Headers**: Define global authentication headers once in your config.
+-   **Fluent API**: Define documentation directly in your Controller logic using `document()` function.
+-   **PHP 8 Attributes**: Alternatively, use `#[DocAPI]`, `#[DocParam]`, `#[DocHeader]`, `#[DocResponse]` attributes for cleaner code.
+-   **Automatic Schema Discovery**: Eloquent models are automatically scanned.
+-   **Mobile Ready**: Generated **OpenAPI 3.0** & **Swagger 2.0** specs are perfect for generating **iOS (Swift)** and **Android (Kotlin)** clients via generic code generators.
+-   **Multi-Format Output**: Markdown, OpenAPI 3.0, Swagger 2.0, Postman, TypeScript SDK.
+-   **Configurable Headers**: Define global authentication headers once in your config.
 
 ---
 
@@ -26,22 +26,22 @@ A lightweight, developer-friendly API documentation generator for Laravel.
 If your backend developer leaves, does the next person know how the API works?
 With `Easy-Doc`, documentation lives **inside the code**.
 
-- **Knowledge Transfer**: The docs are right next to the logic.
-- **Self-Explaining Code**: The Fluent API (`->name('Login')`) makes intent clear.
+-   **Knowledge Transfer**: The docs are right next to the logic.
+-   **Self-Explaining Code**: The Fluent API (`->name('Login')`) makes intent clear.
 
 ### 🛡️ Real-World Resilience
 
 Projects get paused. Clients change requirements. Developers changes.
 
-- **Project Restarts**: Paused for 6 months? Since docs are code, they don't "rot". You pick up exactly where you left off.
-- **Change Requests**: When a client changes a requirement, you change the code AND the doc in the same file. No desync. No "I forgot to update the wiki".
+-   **Project Restarts**: Paused for 6 months? Since docs are code, they don't "rot". You pick up exactly where you left off.
+-   **Change Requests**: When a client changes a requirement, you change the code AND the doc in the same file. No desync. No "I forgot to update the wiki".
 
 ### 🧠👨‍💻 For Solo Devs: Your "External Brain"
 
 Working alone? `Easy-Doc` acts as your memory.
 
-- **Completeness Check**: By explicitly defining endpoints, you instantly spot missing descriptions or edge cases.
-- **Future-Proofing**: Come back to your project 6 months later and know _exactly_ what every endpoint does without re-reading the execution logic.
+-   **Completeness Check**: By explicitly defining endpoints, you instantly spot missing descriptions or edge cases.
+-   **Future-Proofing**: Come back to your project 6 months later and know _exactly_ what every endpoint does without re-reading the execution logic.
 
 **It bridges the gap between "Code" and "Explanation".**
 
@@ -230,11 +230,11 @@ public function index(Request $request) {
 
 #### Benefits of Attributes:
 
-- **Cleaner controller methods** - Business logic is separated from documentation
-- **IDE support** - Better autocomplete and validation
-- **Standard PHP pattern** - Follows modern PHP 8+ conventions
-- **Compile-time validation** - PHP validates attribute syntax
-- **Full feature parity** - All `document()` options available as attributes
+-   **Cleaner controller methods** - Business logic is separated from documentation
+-   **IDE support** - Better autocomplete and validation
+-   **Standard PHP pattern** - Follows modern PHP 8+ conventions
+-   **Compile-time validation** - PHP validates attribute syntax
+-   **Full feature parity** - All `document()` options available as attributes
 
 #### Example: Login with Attributes
 
@@ -287,6 +287,25 @@ public function login(Request $request)
 | `#[DocParam(...)]`    | Request body/query/path parameters  | Yes        |
 | `#[DocHeader(...)]`   | Request headers                     | Yes        |
 | `#[DocResponse(...)]` | Success and error response examples | Yes        |
+| `#[DocRequest(...)]`  | Auto-document FormRequest rules     | No         |
+
+#### 🆕 Auto-Documenting FormRequests with `#[DocRequest]`
+
+Stop repeating yourself! If you use Laravel's `FormRequest` for validation, you can automatically generate documentation parameters from your rules.
+
+```php
+use EasyDoc\Attributes\DocRequest;
+use App\Http\Requests\RegisterRequest;
+
+#[DocAPI(name: 'Register', group: 'Auth')]
+#[DocRequest(RegisterRequest::class)] // <--- Magic happens here!
+public function register(RegisterRequest $request)
+{
+    // ...
+}
+```
+
+`EasyDoc` parses the `rules()` method and converts them into `#[DocParam]` entries automatically, including types and required status.
 
 #### DocAPI Options (Complete Reference)
 
@@ -487,24 +506,43 @@ EASY_DOC_VISIBLE=true
 
 Then visit:
 
-- **Public Documentation (Redoc)**: `http://your-app.test/api-docs` (Beautiful, client-facing docs)
-- **Dashboard (Swagger UI)**: `http://your-app.test/easy-doc` (Interactive testing dashboard)
+-   **Public Documentation (Redoc)**: `http://your-app.test/api-docs` (Beautiful, client-facing docs)
+-   **Dashboard (Swagger UI)**: `http://your-app.test/easy-doc` (Interactive testing dashboard)
 
 ---
 
-## 🛠️ API Response Macros
+## 🛠️ API Responses (Trait)
 
-`EasyDoc` provides standardized response macros to ensure consistency across your API.
+`EasyDoc` provides a convenient trait `ApiResponses` to standardize your API responses.
 
-| Macro                                   | Usage                                                          | Description                                     |
-| :-------------------------------------- | :------------------------------------------------------------- | :---------------------------------------------- |
-| `apiSuccess($data, $message, $status)`  | `return response()->apiSuccess($user, 'Created', 201);`        | Returns standardized success structure.         |
-| `apiSuccessList($list, $message)`       | `return response()->apiSuccessList($items, 'List retrieved');` | Returns a list of items.                        |
-| `apiSuccessPaginated($paginator, $msg)` | `return response()->apiSuccessPaginated($users);`              | Returns paginated data with `meta` and `links`. |
-| `apiError($msg, $status, $data)`        | `return response()->apiError('Invalid input', 422);`           | Returns standardized error structure.           |
-| `apiNotFound($msg)`                     | `return response()->apiNotFound('User not found');`            | Returns 404 error.                              |
-| `apiUnauthorized($msg)`                 | `return response()->apiUnauthorized();`                        | Returns 401 error.                              |
-| `apiValidationError($errors, $msg)`     | `return response()->apiValidationError($validator->errors());` | Returns 422 with validation errors.             |
+**Step 1: Use the Trait in your Controller**
+
+```php
+use EasyDoc\Traits\ApiResponses;
+
+class AuthController extends Controller
+{
+    use ApiResponses;
+
+    public function login()
+    {
+        // ...
+        return $this->apiSuccess(['token' => '...']);
+    }
+}
+```
+
+**Available Methods:**
+
+| Method                                  | Usage                                                     | Description                                     |
+| :-------------------------------------- | :-------------------------------------------------------- | :---------------------------------------------- |
+| `apiSuccess($data, $message, $status)`  | `return $this->apiSuccess($user, 'Created', 201);`        | Returns standardized success structure.         |
+| `apiSuccessList($list, $message)`       | `return $this->apiSuccessList($items, 'List retrieved');` | Returns a list of items.                        |
+| `apiSuccessPaginated($paginator, $msg)` | `return $this->apiSuccessPaginated($users);`              | Returns paginated data with `meta` and `links`. |
+| `apiError($msg, $status, $data)`        | `return $this->apiError('Invalid input', 422);`           | Returns standardized error structure.           |
+| `apiNotFound($msg)`                     | `return $this->apiNotFound('User not found');`            | Returns 404 error.                              |
+| `apiUnauthorized($msg)`                 | `return $this->apiUnauthorized();`                        | Returns 401 error.                              |
+| `apiForbidden($msg)`                    | `return $this->apiForbidden();`                           | Returns 403 error.                              |
 
 **Standard Response Structure:**
 
@@ -565,10 +603,30 @@ php artisan easy-doc:generate --markdown --openapi3 --sdk
 
 This will generate:
 
-- `public/docs/openapi.json` (OpenAPI 3.0)
-- `public/docs/swagger.json` (Swagger 2.0)
-- `public/docs/postman_collection.json` (Postman)
-- `public/docs/types.ts` (TypeScript Interfaces)
+-   `public/docs/openapi.json` (OpenAPI 3.0)
+-   `public/docs/swagger.json` (Swagger 2.0)
+-   `public/docs/postman_collection.json` (Postman)
+-   `public/docs/types.ts` (TypeScript Interfaces)
+
+### Performance & Caching ⚡
+
+In production, parsing Attributes and Reflection on every request can be slow. `EasyDoc` provides caching commands to optimize performance.
+
+**Cache Documentation:**
+Serializes the parsed documentation to `bootstrap/cache/easy-doc.php`, bypassing the reflection process in subsequent requests.
+
+```bash
+php artisan easy-doc:cache
+```
+
+**Clear Cache:**
+Removes the cached file.
+
+```bash
+php artisan easy-doc:clear
+```
+
+> **Recommendation:** Add `php artisan easy-doc:cache` to your deployment script.
 
 ---
 
@@ -602,12 +660,12 @@ Param::make('zip_code', Param::TYPE_STRING)
 
 **Available Types:**
 
-- `Param::TYPE_STRING`
-- `Param::TYPE_INT`
-- `Param::TYPE_BOOLEAN`
-- `Param::TYPE_ARRAY`
-- `Param::TYPE_FILE` (See File Uploads below)
-- `Param::TYPE_NUMBER` / `TYPE_FLOAT`
+-   `Param::TYPE_STRING`
+-   `Param::TYPE_INT`
+-   `Param::TYPE_BOOLEAN`
+-   `Param::TYPE_ARRAY`
+-   `Param::TYPE_FILE` (See File Uploads below)
+-   `Param::TYPE_NUMBER` / `TYPE_FLOAT`
 
 ### File Uploads 📂
 
@@ -764,12 +822,12 @@ public function update(Request $request, User $user) { }
 
 **Available Default Presets:**
 
-- `validation` (422)
-- `unauthenticated` (401)
-- `unauthorized` (403)
-- `not_found` (404)
-- `rate_limit` (429)
-- `server_error` (500)
+-   `validation` (422)
+-   `unauthenticated` (401)
+-   `unauthorized` (403)
+-   `not_found` (404)
+-   `rate_limit` (429)
+-   `server_error` (500)
 
 ---
 
