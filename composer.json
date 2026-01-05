@@ -51,6 +51,10 @@
             ]
         }
     },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "analyze": "vendor/bin/phpstan analyse"
+    },
     "minimum-stability": "stable",
     "prefer-stable": true
 }

@@ -1,0 +1,15 @@
+includes:
+    - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+    level: 5
+    paths:
+        - src
+    excludePaths:
+        - src/helpers.php
+    checkOctaneCompatibility: true
+    checkModelProperties: true
+    ignoreErrors:
+        -
+            message: '#Call to an undefined method Illuminate\\Routing\\Route::methods\(\)#'
+            path: src/Services/RouteDiscoveryService.php
