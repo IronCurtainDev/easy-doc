@@ -30,17 +30,25 @@ class CacheDocsCommand extends Command
      */
     public function handle(RouteDiscoveryService $discovery, DocBuilder $builder): int
     {
-        $this->call('easy-doc:generate');
+        $this->call('easy-doc:generate', [
+            '--no-files-output' => true,
+            '--no-apidoc' => true
+        ]);
 
-        // The generate command populates the builder
-        // We can access the raw data from the builder if we expose it,
-        // OR we can just cache the output files which is what we likely want for "loading".
-        // But true route caching means bypassing reflection.
+        $apiCalls = $builder->getApiCalls()->toArray();
 
-        // For V2.0 MVP, let's assume we cache the 'apidoc.json' result
-        // And RouteDiscoveryService checks for this file.
+        $cachePath = base_path('bootstrap/cache/easy-doc.php');
+        $directory = dirname($cachePath);
 
-        $this->info('Documentation cached successfully!');
+        if (!File::exists($directory)) {
+            File::makeDirectory($directory, 0755, true);
+        }
+
+        $content = "<?php\n\nreturn " . var_export($apiCalls, true) . ";\n";
+
+        File::put($cachePath, $content);
+
+        $this->info("Documentation cached successfully at: {$cachePath}");
         return 0;
     }
 }

@@ -581,8 +581,9 @@ class AttributeReader
         }
 
         try {
-            // Resolve form request using container
-            $formRequest = app($requestClass);
+            // Resolve form request manually to avoid triggering validation
+            // We use standard instantiation as FormRequests shouldn't have complex constructor deps
+            $formRequest = new $requestClass();
 
             if (!method_exists($formRequest, 'rules')) {
                 return;

@@ -27,8 +27,8 @@ class AttributeReaderTest extends TestCase
 
         $params = $apiCall->getParams();
         $this->assertCount(1, $params);
-        $this->assertEquals('search', $params[0]['fieldName']);
-        $this->assertEquals('string', $params[0]['dataType']);
+        $this->assertEquals('search', $params[0]->getName());
+        $this->assertEquals('String', $params[0]->getDataType());
     }
 }
 

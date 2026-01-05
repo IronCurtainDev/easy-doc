@@ -21,6 +21,7 @@ class V2Test extends TestCase
 
         // Mock config
         Config::set('easy-doc.auto_discover_models', false);
+        Config::set('easy-doc.base_path', '/');
     }
 
     public function test_doc_request_attribute_parses_rules()
@@ -36,22 +37,30 @@ class V2Test extends TestCase
         $this->assertArrayHasKey('/v2-test', $content['paths']);
         $post = $content['paths']['/v2-test']['post'];
 
-        // Check if params from TestRequest are present
-        $params = collect($post['parameters']);
+        // Check if params from TestRequest are present in requestBody
+        $this->assertArrayHasKey('requestBody', $post);
 
-        $titleParam = $params->firstWhere('name', 'title');
-        $this->assertNotNull($titleParam);
-        $this->assertEquals('string', $titleParam['schema']['type']);
-        $this->assertTrue($titleParam['required']); // "required" rule
+        $properties = $post['requestBody']['content']['application/json']['schema']['properties'];
 
-        $countParam = $params->firstWhere('name', 'count');
-        $this->assertNotNull($countParam);
-        $this->assertEquals('integer', $countParam['schema']['type']); // "integer" rule
+        $this->assertArrayHasKey('title', $properties);
+        $this->assertEquals('string', $properties['title']['type']);
+
+        $this->assertArrayHasKey('count', $properties);
+        $this->assertEquals('integer', $properties['count']['type']);
+
+        // Check required fields
+        $required = $post['requestBody']['content']['application/json']['schema']['required'];
+        $this->assertContains('title', $required);
     }
 
     public function test_caching_commands()
     {
         $cachePath = base_path('bootstrap/cache/easy-doc.php');
+
+        // Ensure directory exists for testing
+        if (!File::exists(dirname($cachePath))) {
+            File::makeDirectory(dirname($cachePath), 0755, true);
+        }
 
         // clear first
         if (File::exists($cachePath)) {

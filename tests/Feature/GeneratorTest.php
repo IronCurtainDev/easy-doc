@@ -22,6 +22,7 @@ class GeneratorTest extends TestCase
 
         // Mock config
         Config::set('easy-doc.auto_discover_models', false);
+        Config::set('easy-doc.base_path', '/');
     }
 
     public function test_it_generates_openapi_json()
@@ -38,7 +39,7 @@ class GeneratorTest extends TestCase
         $content = json_decode(file_get_contents($outputPath), true);
 
         $this->assertArrayHasKey('openapi', $content);
-        $this->assertEquals('3.0.0', $content['openapi']);
+        $this->assertEquals('3.0.3', $content['openapi']);
 
         // Check paths
         $this->assertArrayHasKey('/test-api', $content['paths']);
@@ -57,6 +58,6 @@ class GeneratorTest extends TestCase
 class TestApiController
 {
     #[DocAPI(name: 'Test API', group: 'General')]
-    #[DocParam(name: 'filter', type: 'string')]
+    #[DocParam(name: 'filter', type: 'string', location: 'query')]
     public function index() {}
 }
