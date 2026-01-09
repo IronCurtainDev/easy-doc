@@ -336,7 +336,19 @@ class RouteDiscoveryService
                     try {
                         $dependencies[] = new $typeName();
                     } catch (\Throwable $e) {
-                        $dependencies[] = null; // Will likely fail type check, but best effort
+                        // Attempt to mock the dependency if Mockery is available
+                        if (class_exists('Mockery')) {
+                            try {
+                                $dependencies[] = \Mockery::mock($typeName);
+                                continue;
+                            } catch (\Throwable $e) {
+                                // Fall through to exception
+                            }
+                        }
+
+                        // If we cannot provide a valid dependency, we should not proceed with invocation
+                        // as it will cause a fatal TypeError.
+                        throw new \Exception("Could not resolve dependency {$typeName} for parameter {$param->getName()}");
                     }
                 }
             }
