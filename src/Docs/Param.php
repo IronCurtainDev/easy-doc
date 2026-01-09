@@ -48,13 +48,13 @@ class Param implements Arrayable, \JsonSerializable
 
     public function __construct(
         ?string $fieldName = null,
-        string $dataType = self::TYPE_STRING,
+        string|ParamType $dataType = self::TYPE_STRING,
         ?string $description = null,
-        ?string $location = null
+        string|ParamLocation|null $location = null
     ) {
         $this->fieldName = $fieldName;
-        $this->setDataType($dataType);
-        $this->location = $location;
+        $this->setDataType($dataType instanceof ParamType ? $dataType->value : $dataType);
+        $this->location = $location instanceof ParamLocation ? $location->value : $location;
 
         if (!$description && $fieldName) {
             $this->description = ucfirst(str_replace('_', ' ', $fieldName));
@@ -68,7 +68,7 @@ class Param implements Arrayable, \JsonSerializable
      */
     public static function make(
         ?string $fieldName = null,
-        string $dataType = self::TYPE_STRING,
+        string|ParamType $dataType = self::TYPE_STRING,
         ?string $description = null
     ): static {
         return new static($fieldName, $dataType, $description);
@@ -128,9 +128,9 @@ class Param implements Arrayable, \JsonSerializable
         return ucfirst($this->dataType);
     }
 
-    public function dataType(string $dataType): static
+    public function dataType(string|ParamType $dataType): static
     {
-        $this->dataType = $dataType;
+        $this->dataType = $dataType instanceof ParamType ? $dataType->value : $dataType;
         return $this;
     }
 
@@ -172,9 +172,9 @@ class Param implements Arrayable, \JsonSerializable
         return $this->location;
     }
 
-    public function setLocation(string $location): static
+    public function setLocation(string|ParamLocation $location): static
     {
-        $this->location = $location;
+        $this->location = $location instanceof ParamLocation ? $location->value : $location;
         return $this;
     }
 
@@ -264,12 +264,12 @@ class Param implements Arrayable, \JsonSerializable
         return $this;
     }
 
-    public function setDataType(string $dataType): static
+    public function setDataType(string|ParamType $dataType): static
     {
-        $this->dataType = $dataType;
+        $this->dataType = $dataType instanceof ParamType ? $dataType->value : $dataType;
 
         // Set the default array type
-        if ($dataType === self::TYPE_ARRAY) {
+        if ($this->dataType === self::TYPE_ARRAY) {
             $this->setCollectionFormat('multi');
             $this->setArrayType(self::TYPE_STRING);
         }

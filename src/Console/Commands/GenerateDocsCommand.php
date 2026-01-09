@@ -4,6 +4,7 @@ namespace EasyDoc\Console\Commands;
 
 use EasyDoc\Contracts\GeneratorInterface;
 use EasyDoc\Docs\DocBuilder;
+use EasyDoc\Domain\Changelog\ChangelogManager;
 use EasyDoc\Domain\FileGenerators\Markdown\MarkdownGenerator;
 use EasyDoc\Domain\FileGenerators\OpenApi\OpenApiGenerator;
 use EasyDoc\Domain\FileGenerators\Postman\PostmanGenerator;
@@ -37,13 +38,15 @@ class GenerateDocsCommand extends Command
 
     protected Router $router;
     protected DocBuilder $docBuilder;
+    protected ChangelogManager $changelogManager;
     protected string $docsFolder;
     protected array $createdFiles = [];
 
-    public function __construct(Router $router)
+    public function __construct(Router $router, ChangelogManager $changelogManager)
     {
         parent::__construct();
         $this->router = $router;
+        $this->changelogManager = $changelogManager;
     }
 
     public function handle(): int
@@ -99,7 +102,7 @@ class GenerateDocsCommand extends Command
             }
 
             // 3. Post-Processing (ApiDoc, Snapshots, etc)
-            $this->handlePostProcessing();
+            $this->handlePostProcessing($converter);
 
             // 4. Report
             if (!$this->option('no-files-output')) {
@@ -151,7 +154,7 @@ class GenerateDocsCommand extends Command
         return $generators;
     }
 
-    protected function handlePostProcessing(): void
+    protected function handlePostProcessing(OpenApiConverter $converter): void
     {
         // ApiDoc HTML Compilation
         if (!$this->option('no-apidoc')) {
@@ -160,12 +163,12 @@ class GenerateDocsCommand extends Command
 
         // Version Snapshot
         if ($this->option('snapshot')) {
-            $this->saveVersionSnapshot();
+            $this->saveVersionSnapshot($converter);
         }
 
         // Version Diff
         if ($this->option('diff')) {
-            $this->showVersionDiff();
+            $this->showVersionDiff($converter);
         }
 
         // Pruning
@@ -199,6 +202,51 @@ class GenerateDocsCommand extends Command
         } catch (\Exception $e) {
             $this->warn('  [WARN] ApiDoc compilation failed: ' . $e->getMessage());
         }
+    }
+
+    protected function saveVersionSnapshot(OpenApiConverter $converter): void
+    {
+        $this->info('Saving version snapshot...');
+
+        $schema = $converter->convert($this->docBuilder->getApiCalls());
+        $this->changelogManager->setCurrentSchema($schema);
+
+        $path = $this->changelogManager->saveSnapshot();
+        $this->createdFiles[] = ['Version Snapshot', $this->stripBasePath($path)];
+
+        $this->info('  [OK] Snapshot saved');
+    }
+
+    protected function showVersionDiff(OpenApiConverter $converter): void
+    {
+        $this->info('Generating version diff...');
+
+        $schema = $converter->convert($this->docBuilder->getApiCalls());
+        $this->changelogManager->setCurrentSchema($schema);
+
+        $diff = $this->changelogManager->compareWithLatest();
+
+        if (isset($diff['error'])) {
+            $this->warn('  [WARN] ' . $diff['error']);
+            return;
+        }
+
+        $changelog = $this->changelogManager->generateChangelog($diff);
+
+        $path = $this->docsFolder . '/changelog.md';
+        File::put($path, $changelog);
+
+        $this->createdFiles[] = ['Changelog', $this->stripBasePath($path)];
+        $this->info('  [OK] Changelog generated');
+    }
+
+    protected function pruneOldVersions(int $keep): void
+    {
+        $this->info("Pruning old version snapshots (keeping {$keep})...");
+
+        $deleted = $this->changelogManager->prune($keep);
+
+        $this->info("  [OK] Deleted {$deleted} old snapshots");
     }
 
     protected function copySwaggerUI(): void
