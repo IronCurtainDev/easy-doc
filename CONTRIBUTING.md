@@ -8,6 +8,13 @@ Please be respectful and considerate of others when contributing to this project
 
 ## How to Contribute
 
+## Prerequisites
+
+- PHP 8.3 or newer
+- Composer 2.x
+
+The package targets Laravel 13.4+ for runtime compatibility.
+
 1.  **Fork the Repository**: Create a fork of this repository to your own GitHub account.
 2.  **Create a Branch**: Create a new branch for your feature or bug fix.
     ```bash
@@ -30,9 +37,9 @@ Please be respectful and considerate of others when contributing to this project
 
 ## Coding Standards
 
--   We follow **PSR-12** coding standards.
--   All new features should be accompanied by tests.
--   Ensure `declare(strict_types=1);` is present in all PHP files.
+- We follow **PSR-12** coding standards.
+- All new features should be accompanied by tests.
+- Ensure `declare(strict_types=1);` is present in all PHP files.
 
 ## Reporting Bugs
 

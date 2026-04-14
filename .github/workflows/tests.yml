@@ -9,13 +9,24 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
 
     strategy:
       fail-fast: true
       matrix:
-        php: [8.2, 8.3]
-        laravel: [11.*]
-        stability: [prefer-stable]
+        include:
+          - php: 8.3
+            laravel: 13.4.*
+            stability: prefer-stable
+            experimental: false
+          - php: 8.4
+            laravel: 13.*
+            stability: prefer-stable
+            experimental: false
+          - php: nightly
+            laravel: 13.*
+            stability: prefer-stable
+            experimental: true
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.stability }}
 

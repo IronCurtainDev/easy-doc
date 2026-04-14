@@ -10,12 +10,12 @@ A lightweight, developer-friendly API documentation generator for Laravel.
 
 ## 🚀 Features
 
--   **Fluent API**: Define documentation directly in your Controller logic using `document()` function.
--   **PHP 8 Attributes**: Alternatively, use `#[DocAPI]`, `#[DocParam]`, `#[DocHeader]`, `#[DocResponse]` attributes for cleaner code.
--   **Automatic Schema Discovery**: Eloquent models are automatically scanned.
--   **Mobile Ready**: Generated **OpenAPI 3.0** & **Swagger 2.0** specs are perfect for generating **iOS (Swift)** and **Android (Kotlin)** clients via generic code generators.
--   **Multi-Format Output**: Markdown, OpenAPI 3.0, Swagger 2.0, Postman, TypeScript SDK.
--   **Configurable Headers**: Define global authentication headers once in your config.
+- **Fluent API**: Define documentation directly in your Controller logic using `document()` function.
+- **PHP 8 Attributes**: Alternatively, use `#[DocAPI]`, `#[DocParam]`, `#[DocHeader]`, `#[DocResponse]` attributes for cleaner code.
+- **Automatic Schema Discovery**: Eloquent models are automatically scanned.
+- **Mobile Ready**: Generated **OpenAPI 3.0** & **Swagger 2.0** specs are perfect for generating **iOS (Swift)** and **Android (Kotlin)** clients via generic code generators.
+- **Multi-Format Output**: Markdown, OpenAPI 3.0, Swagger 2.0, Postman, TypeScript SDK.
+- **Configurable Headers**: Define global authentication headers once in your config.
 
 ---
 
@@ -26,22 +26,22 @@ A lightweight, developer-friendly API documentation generator for Laravel.
 If your backend developer leaves, does the next person know how the API works?
 With `Easy-Doc`, documentation lives **inside the code**.
 
--   **Knowledge Transfer**: The docs are right next to the logic.
--   **Self-Explaining Code**: The Fluent API (`->name('Login')`) makes intent clear.
+- **Knowledge Transfer**: The docs are right next to the logic.
+- **Self-Explaining Code**: The Fluent API (`->name('Login')`) makes intent clear.
 
 ### 🛡️ Real-World Resilience
 
 Projects get paused. Clients change requirements. Developers changes.
 
--   **Project Restarts**: Paused for 6 months? Since docs are code, they don't "rot". You pick up exactly where you left off.
--   **Change Requests**: When a client changes a requirement, you change the code AND the doc in the same file. No desync. No "I forgot to update the wiki".
+- **Project Restarts**: Paused for 6 months? Since docs are code, they don't "rot". You pick up exactly where you left off.
+- **Change Requests**: When a client changes a requirement, you change the code AND the doc in the same file. No desync. No "I forgot to update the wiki".
 
 ### 🧠👨‍💻 For Solo Devs: Your "External Brain"
 
 Working alone? `Easy-Doc` acts as your memory.
 
--   **Completeness Check**: By explicitly defining endpoints, you instantly spot missing descriptions or edge cases.
--   **Future-Proofing**: Come back to your project 6 months later and know _exactly_ what every endpoint does without re-reading the execution logic.
+- **Completeness Check**: By explicitly defining endpoints, you instantly spot missing descriptions or edge cases.
+- **Future-Proofing**: Come back to your project 6 months later and know _exactly_ what every endpoint does without re-reading the execution logic.
 
 **It bridges the gap between "Code" and "Explanation".**
 
@@ -54,7 +54,7 @@ Install via Composer:
 ### Stable Version (Recommended)
 
 ```bash
-composer require ironcurtaindev/easy-doc:^0.2
+composer require ironcurtaindev/easy-doc:^1.0
 ```
 
 ### Development Version (Bleeding Edge)
@@ -62,6 +62,13 @@ composer require ironcurtaindev/easy-doc:^0.2
 ```bash
 composer require ironcurtaindev/easy-doc:dev-main
 ```
+
+## 📋 Requirements
+
+- Laravel: `13.4+`
+- PHP: `8.3+`
+
+> Need Laravel 11/12 support? Use a pre-1.0 release line.
 
 Publish the configuration (Optional):
 
@@ -230,11 +237,11 @@ public function index(Request $request) {
 
 #### Benefits of Attributes:
 
--   **Cleaner controller methods** - Business logic is separated from documentation
--   **IDE support** - Better autocomplete and validation
--   **Standard PHP pattern** - Follows modern PHP 8+ conventions
--   **Compile-time validation** - PHP validates attribute syntax
--   **Full feature parity** - All `document()` options available as attributes
+- **Cleaner controller methods** - Business logic is separated from documentation
+- **IDE support** - Better autocomplete and validation
+- **Standard PHP pattern** - Follows modern PHP 8+ conventions
+- **Compile-time validation** - PHP validates attribute syntax
+- **Full feature parity** - All `document()` options available as attributes
 
 #### Example: Login with Attributes
 
@@ -506,9 +513,9 @@ EASY_DOC_VISIBLE=true
 
 Then visit:
 
--   **Public Documentation (Redoc)**: `http://your-app.test/api-docs` (Beautiful, client-facing docs)
--   **Modern API Reference (Scalar)**: `http://your-app.test/docs/scalar` (Interactive, dark mode, beautiful)
--   **Dashboard (Swagger UI)**: `http://your-app.test/easy-doc` (Interactive testing dashboard)
+- **Public Documentation (Redoc)**: `http://your-app.test/api-docs` (Beautiful, client-facing docs)
+- **Modern API Reference (Scalar)**: `http://your-app.test/docs/scalar` (Interactive, dark mode, beautiful)
+- **Dashboard (Swagger UI)**: `http://your-app.test/easy-doc` (Interactive testing dashboard)
 
 ---
 
@@ -604,10 +611,10 @@ php artisan easy-doc:generate --markdown --openapi3 --sdk
 
 This will generate:
 
--   `public/docs/openapi.json` (OpenAPI 3.0)
--   `public/docs/swagger.json` (Swagger 2.0)
--   `public/docs/postman_collection.json` (Postman)
--   `public/docs/types.ts` (TypeScript Interfaces)
+- `public/docs/openapi.json` (OpenAPI 3.0)
+- `public/docs/swagger.json` (Swagger 2.0)
+- `public/docs/postman_collection.json` (Postman)
+- `public/docs/types.ts` (TypeScript Interfaces)
 
 ### Performance & Caching ⚡
 
@@ -661,12 +668,12 @@ Param::make('zip_code', Param::TYPE_STRING)
 
 **Available Types:**
 
--   `Param::TYPE_STRING`
--   `Param::TYPE_INT`
--   `Param::TYPE_BOOLEAN`
--   `Param::TYPE_ARRAY`
--   `Param::TYPE_FILE` (See File Uploads below)
--   `Param::TYPE_NUMBER` / `TYPE_FLOAT`
+- `Param::TYPE_STRING`
+- `Param::TYPE_INT`
+- `Param::TYPE_BOOLEAN`
+- `Param::TYPE_ARRAY`
+- `Param::TYPE_FILE` (See File Uploads below)
+- `Param::TYPE_NUMBER` / `TYPE_FLOAT`
 
 ### File Uploads 📂
 
@@ -823,12 +830,12 @@ public function update(Request $request, User $user) { }
 
 **Available Default Presets:**
 
--   `validation` (422)
--   `unauthenticated` (401)
--   `unauthorized` (403)
--   `not_found` (404)
--   `rate_limit` (429)
--   `server_error` (500)
+- `validation` (422)
+- `unauthenticated` (401)
+- `unauthorized` (403)
+- `not_found` (404)
+- `rate_limit` (429)
+- `server_error` (500)
 
 ---
 

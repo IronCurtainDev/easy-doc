@@ -40,7 +40,7 @@ class ChangelogManager
     /**
      * Save a version snapshot.
      */
-    public function saveSnapshot(string $version = null): string
+    public function saveSnapshot(?string $version = null): string
     {
         $this->ensureStorageDir();
 

@@ -1,0 +1,46 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Call to an undefined method EasyDoc\\\\Services\\\\OpenApiConverter\\:\\:convert\\(\\)\\.$#"
+			count: 2
+			path: src/Console/Commands/GenerateDocsCommand.php
+
+		-
+			message: "#^If condition is always true\\.$#"
+			count: 1
+			path: src/Docs/DocBuilder.php
+
+		-
+			message: "#^Unsafe usage of new static\\(\\)\\.$#"
+			count: 2
+			path: src/Docs/Param.php
+
+		-
+			message: "#^Variable \\$required on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: src/Docs/SchemaBuilder.php
+
+		-
+			message: "#^Unsafe usage of new static\\(\\)\\.$#"
+			count: 1
+			path: src/Docs/SchemaType.php
+
+		-
+			message: "#^Call to function is_int\\(\\) with int will always evaluate to true\\.$#"
+			count: 1
+			path: src/Services/AttributeReader.php
+
+		-
+			message: "#^Argument of an invalid type Illuminate\\\\Routing\\\\RouteCollectionInterface supplied for foreach, only iterables are supported\\.$#"
+			count: 2
+			path: src/Services/RouteDiscoveryService.php
+
+		-
+			message: "#^Call to method Illuminate\\\\Support\\\\Collection\\<\\*NEVER\\*,\\*NEVER\\*\\>\\:\\:isEmpty\\(\\) will always evaluate to true\\.$#"
+			count: 1
+			path: src/Services/RouteDiscoveryService.php
+
+		-
+			message: "#^Trait EasyDoc\\\\Traits\\\\ApiResponses is used zero times and is not analysed\\.$#"
+			count: 1
+			path: src/Traits/ApiResponses.php

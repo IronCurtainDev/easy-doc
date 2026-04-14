@@ -5,22 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-04-14
+
+### Added
+
+- Full Laravel 13.4+ support across runtime dependencies and test tooling
+- CI coverage for PHP 8.3 and 8.4 with a non-blocking nightly lane
+
+### Changed
+
+- **Breaking**: package support is now Laravel 13.4+ only
+- **Breaking**: minimum PHP version is now `^8.3`
+- Updated development stack to `orchestra/testbench:^11.0` and `phpunit/phpunit:^11.5`
+- Updated `symfony/yaml` constraint to `^7.0|^8.0` for modern framework compatibility
+
 ## [0.4.0] - 2026-01-05
 
 ### Added
 
 - **DocGroup Attribute** - Controller-level defaults for all endpoints:
-  - Set `group`, `version`, `tags`, `consumes` once at the class level
-  - Common `headers` and `possibleErrors` inherited by all methods
-  - `rateLimit` defaults for all endpoints
+    - Set `group`, `version`, `tags`, `consumes` once at the class level
+    - Common `headers` and `possibleErrors` inherited by all methods
+    - `rateLimit` defaults for all endpoints
 - **DocError Attribute** - Shorthand for common error responses:
-  - Reference error presets by name: `#[DocError('validation')]`
-  - Built-in presets: `validation`, `unauthenticated`, `unauthorized`, `not_found`, `rate_limit`, `server_error`
-  - Define custom presets in `config/easy-doc.php`
+    - Reference error presets by name: `#[DocError('validation')]`
+    - Built-in presets: `validation`, `unauthenticated`, `unauthorized`, `not_found`, `rate_limit`, `server_error`
+    - Define custom presets in `config/easy-doc.php`
 - **Param Templates** - Reusable parameter definitions:
-  - Define once in config: `'param_templates' => ['email' => [...]]`
-  - Use in controllers: `#[DocParam(template: 'email')]`
-  - Override specific values while using template
+    - Define once in config: `'param_templates' => ['email' => [...]]`
+    - Use in controllers: `#[DocParam(template: 'email')]`
+    - Override specific values while using template
 - New config options: `param_templates` and `error_presets`
 
 ### Changed
@@ -35,18 +49,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **PHP 8 Attributes Support** - New attribute-based API documentation as an alternative to the `document()` function approach:
-  - `#[DocAPI]` - Main attribute for endpoint documentation with full feature parity:
-    - Basic: `name`, `group`, `description`, `version`, `operationId`
-    - Response: `successObject`, `successPaginatedObject`, `successMessageOnly`, `successParams`
-    - Schema: `successSchema`, `errorSchema`
-    - Meta: `tags`, `deprecated`, `rateLimit`, `consumes`
-    - Headers: `headers`, `addDefaultHeaders`
-    - Parameters: `params`, `requestExample`
-    - Reusable blocks: `define`, `use`
-    - Errors: `possibleErrors`
-  - `#[DocParam]` - Repeatable attribute for request parameters with type, example, validation constraints
-  - `#[DocHeader]` - Repeatable attribute for request headers
-  - `#[DocResponse]` - Repeatable attribute for success and error response examples
+    - `#[DocAPI]` - Main attribute for endpoint documentation with full feature parity:
+        - Basic: `name`, `group`, `description`, `version`, `operationId`
+        - Response: `successObject`, `successPaginatedObject`, `successMessageOnly`, `successParams`
+        - Schema: `successSchema`, `errorSchema`
+        - Meta: `tags`, `deprecated`, `rateLimit`, `consumes`
+        - Headers: `headers`, `addDefaultHeaders`
+        - Parameters: `params`, `requestExample`
+        - Reusable blocks: `define`, `use`
+        - Errors: `possibleErrors`
+    - `#[DocParam]` - Repeatable attribute for request parameters with type, example, validation constraints
+    - `#[DocHeader]` - Repeatable attribute for request headers
+    - `#[DocResponse]` - Repeatable attribute for success and error response examples
 - New `AttributeReader` service for parsing PHP attributes via Reflection API
 - Updated `RouteDiscoveryService` to detect and use attributes before invoking controller methods
 - IDE helper stubs for all new attribute classes
