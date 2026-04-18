@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * EasyDoc IDE helper file.
+ * This file is for IDE autocomplete only and must not be loaded via Composer autoload files.
+ */
 /** @noinspection PhpUndefinedClassInspection */
 /** @noinspection PhpMultipleClassDeclarationsInspection */
 

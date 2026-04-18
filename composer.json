@@ -36,8 +36,7 @@
             "EasyDoc\\": "src/"
         },
         "files": [
-            "src/helpers.php",
-            "src/_ide_helpers.php"
+            "src/helpers.php"
         ]
     },
     "autoload-dev": {
