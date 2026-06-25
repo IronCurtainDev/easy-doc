@@ -18,7 +18,7 @@ namespace Illuminate\Routing {
      * @method \Illuminate\Http\JsonResponse apiUnauthorized(string $message = 'Unauthorized')
      * @method \Illuminate\Http\JsonResponse apiValidationError($errors, string $message = 'Validation failed')
      */
-    class ResponseFactory {}
+    // class ResponseFactory {}
 }
 
 namespace Illuminate\Support\Facades {
@@ -31,7 +31,7 @@ namespace Illuminate\Support\Facades {
      * @method static \Illuminate\Http\JsonResponse apiUnauthorized(string $message = 'Unauthorized')
      * @method static \Illuminate\Http\JsonResponse apiValidationError($errors, string $message = 'Validation failed')
      */
-    class Response {}
+    // class Response {}
 }
 
 namespace EasyDoc\Attributes {
